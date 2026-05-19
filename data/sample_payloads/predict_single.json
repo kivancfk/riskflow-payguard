@@ -1,0 +1,10 @@
+{
+  "transaction_id": "txn_000001",
+  "transaction_amount": 129.50,
+  "product_code": "W",
+  "card_type": "credit",
+  "card_issuer_country": "US",
+  "purchaser_email_domain": "gmail.com",
+  "device_type": "mobile",
+  "hour_of_day": 14
+}

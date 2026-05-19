@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+
+# data & models — keep dirs (via .gitkeep) but exclude contents
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+models/*.pkl
+models/*.joblib
+
+# notebooks
+.ipynb_checkpoints/
+
+# logs / db
+*.db
+*.sqlite3
+*.log
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
