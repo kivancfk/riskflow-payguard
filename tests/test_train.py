@@ -380,4 +380,3 @@ def test_frozen_model_evaluates_test_split() -> None:
         > probability_metrics["fraud_rate"]
     )
     assert len(metrics["review_capacity"]) == 4
-
