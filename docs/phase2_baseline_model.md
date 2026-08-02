@@ -1,5 +1,16 @@
 # Phase 2 — Baseline Model
 
+> **Status: Complete — 2026-08-02**
+>
+> The frozen `baseline-v1` implementation, chronological test
+> evaluation, and versioned model bundle are complete.
+> See [`phase2_baseline_results.md`](phase2_baseline_results.md)
+> for the recorded results and limitations.
+>
+> An additional isolated test-evaluation commit was added before
+> results documentation so the chronological test split remained
+> untouched until the training workflow was frozen.
+
 ## Objective
 
 Phase 2 produces the first reproducible LightGBM fraud classifier for RiskFlow PayGuard.
