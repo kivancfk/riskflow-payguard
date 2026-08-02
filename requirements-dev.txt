@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# Local dataset access
+kaggle>=1.6
+
+# Notebook development
+jupyterlab>=4.2
+ipykernel>=6.29
+
+# Efficient analytical storage
+pyarrow>=15.0
