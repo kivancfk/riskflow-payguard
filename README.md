@@ -8,13 +8,14 @@ The project is being developed as a deployable fintech-style product rather than
 
 ## Current Status
 
-The data and baseline-model foundations are complete.
+The data, baseline-model, probability-calibration, drift-diagnostic, and decision-policy foundations are complete.
 
 | Phase | Status | Deliverable |
 |---|---|---|
 | Phase 1 | Complete | Local data workflow, EDA, feature engineering, and chronological model datasets |
 | Phase 2 | Complete | Reproducible LightGBM baseline, fraud-focused evaluation, and versioned model bundle |
-| Product integration | Planned | Calibration, thresholds, SHAP, API prediction, dashboard, and deployment |
+| Phase 3 | Complete | Probability calibration, drift diagnostics, policy optimization, and versioned policy bundle |
+| Product integration | Planned | SHAP, API prediction, dashboard, monitoring, and deployment |
 
 ### Implemented
 
@@ -31,19 +32,26 @@ The data and baseline-model foundations are complete.
 - Fraud recall and precision at fixed review capacities
 - Fraudulent transaction-amount capture metrics
 - Versioned and atomically persisted joblib model bundle
+- Sigmoid probability calibration
+- Calibration-fit and policy-selection validation partitions
+- Score and categorical drift diagnostics
+- Explicit fraud-policy costs and operational constraints
+- Deterministic `ALLOW`, `REVIEW`, and `BLOCK` threshold optimization
+- Versioned calibrated policy bundle
 - Artifact overwrite protection and post-load validation
+- Raw-feature calibrated-policy inference
 - Reloaded-bundle inference tests
 - Automated pytest coverage
 
 ### Not Yet Implemented
 
-- Probability calibration
-- Business allow, review, and block thresholds
 - SHAP explanations and reason codes
 - Production `/predict` integration
 - Batch prediction integration
+- Prediction logging and monitoring alerts
 - Streamlit monitoring dashboard
-- Model-drift monitoring
+- Threshold-simulation workflow
+- Production cost-assumption validation
 - Cloud deployment
 
 The existing API and dashboard directories are scaffolds for later phases.
@@ -76,6 +84,50 @@ See the complete results and implementation plan:
 
 - [`docs/phase2_baseline_results.md`](docs/phase2_baseline_results.md)
 - [`docs/phase2_baseline_model.md`](docs/phase2_baseline_model.md)
+
+---
+
+
+## Phase 3 Calibration and Policy Results
+
+The frozen `calibrated-policy-v1` artifact embeds `baseline-v1`, a
+sigmoid calibrator, and deterministic fraud-policy thresholds.
+
+Selected thresholds:
+
+- `REVIEW`: probability at or above `0.16255069862369795`
+- `BLOCK`: probability at or above `0.8509223095305902`
+
+Final one-time chronological test results:
+
+| Metric | Result |
+|---|---:|
+| PR-AUC | 0.4946 |
+| ROC-AUC | 0.8808 |
+| Calibrated log loss | 0.1014 |
+| Calibrated Brier score | 0.0238 |
+| Review rate | 4.44% |
+| Block rate | 0.00% |
+| Review precision | 42.49% |
+| Fraud intervention recall | 54.23% |
+| Fraud amount capture | 21.13% |
+| Modeled cost reduction versus all-allow | 19.45% |
+
+Calibration improved test log loss from `0.1300` to `0.1014` and Brier
+score from `0.0336` to `0.0238`, while monotonic sigmoid calibration
+preserved ranking performance.
+
+The frozen policy satisfied all configured operational constraints.
+No test transaction exceeded the frozen block threshold, so the
+test-period policy operated as an `ALLOW` or `REVIEW` policy.
+
+Economic results depend on explicit development assumptions and are not
+measured production savings.
+
+See:
+
+- [`docs/phase3_results.md`](docs/phase3_results.md)
+- [`docs/phase3_calibration_thresholds.md`](docs/phase3_calibration_thresholds.md)
 
 ---
 
@@ -290,7 +342,7 @@ prediction logging
 monitoring and threshold dashboard
 ```
 
-The model bundle and decision-engine foundations exist. API prediction integration, explanation, monitoring, and deployment remain future work.
+The baseline model bundle, calibrated policy bundle, and decision-engine foundations exist. API prediction integration, explanation, monitoring, and deployment remain future work.
 
 ---
 
@@ -339,7 +391,7 @@ tests/        Automated pytest suite
 
 - [x] Phase 1 — Data setup, EDA, feature engineering, and chronological datasets
 - [x] Phase 2 — LightGBM baseline, evaluation, and versioned model bundle
-- [ ] Phase 3 — Probability calibration, drift analysis, and decision thresholds
+- [x] Phase 3 — Probability calibration, drift analysis, and decision thresholds
 - [ ] Phase 4 — SHAP explanations and reason codes
 - [ ] Phase 5 — RiskFlow PayGuard API prediction integration
 - [ ] Phase 6 — Monitoring and threshold-simulation dashboard
@@ -348,22 +400,24 @@ tests/        Automated pytest suite
 
 ---
 
-## Baseline Limitations
+## Current Limitations
 
-The current model should not be treated as a deployed fraud-decision system.
+The calibrated policy should not be treated as a deployed payment
+authorization system.
 
 Principal limitations include:
 
-- Uncalibrated weighted probabilities
-- No business-cost threshold optimization
-- Temporal performance decline
-- No SHAP explanations
-- No high-value fraud objective
+- Development cost assumptions are not validated against production data
+- No final-test transaction reached the frozen block threshold
+- No SHAP explanations or stable reason codes
+- No dedicated high-value fraud objective
 - No production API integration
-- No drift monitoring
-- No retraining workflow
+- No live prediction logging or alerting
+- No automated retraining workflow
+- No formal policy approval or model-risk governance process
 
-The recorded `baseline-v1` model should remain the benchmark for future improvements.
+The recorded `baseline-v1` model and `calibrated-policy-v1` policy should
+remain frozen benchmarks for future improvements.
 
 ---
 

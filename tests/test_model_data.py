@@ -9,7 +9,10 @@ import pandas as pd
 import pytest
 
 from src.data_processing import JOIN_KEY, TARGET_COLUMN
-from src.model_data import load_baseline_datasets
+from src.model_data import (
+    load_baseline_datasets,
+    load_validation_dataset,
+)
 
 
 FEATURE_COLUMNS = [
@@ -318,3 +321,24 @@ def test_load_baseline_datasets_rejects_split_overlap(
         match="overlapping TransactionID",
     ):
         load_baseline_datasets(tmp_path)
+
+def test_load_validation_dataset_does_not_require_other_splits(
+    tmp_path: Path,
+) -> None:
+    _write_valid_artifacts(tmp_path)
+
+    (tmp_path / "train.parquet").unlink()
+    (tmp_path / "test.parquet").unlink()
+
+    dataset = load_validation_dataset(tmp_path)
+
+    assert dataset.validation.transaction_ids.tolist() == [
+        201,
+        202,
+    ]
+    assert dataset.validation.target.tolist() == [0, 1]
+    assert dataset.feature_contract.feature_columns == (
+        "category_feature",
+        "numeric_feature",
+    )
+
