@@ -178,3 +178,78 @@ git status --short
 ```
 
 Kaggle CSV, ZIP, Parquet, and credential files must not appear in Git status.
+## Phase 1 processed datasets
+
+After downloading the IEEE-CIS source files, generate the compact baseline
+datasets from the repository root:
+
+```bash
+python scripts/materialize_phase1.py
+```
+
+The workflow:
+
+1. validates and loads the raw transaction and identity tables
+2. builds the deterministic 63-feature baseline contract
+3. uses the minimum training `TransactionDT` as the shared time origin
+4. creates stable chronological 70%/15%/15% labeled splits
+5. processes the unlabeled Kaggle test set using the same feature contract
+6. validates each artifact before moving it into its final location
+
+Generated files:
+
+```text
+data/processed/
+├── train.parquet
+├── validation.parquet
+├── test.parquet
+├── kaggle_test.parquet
+├── feature_metadata.csv
+└── dataset_manifest.json
+```
+
+Internal labeled Parquet files contain:
+
+- `TransactionID`
+- `isFraud`
+- 63 baseline model features
+
+`kaggle_test.parquet` contains:
+
+- `TransactionID`
+- 63 baseline model features
+- no target column
+
+The manifest records:
+
+- chronological split boundaries and fraud rates
+- identity coverage
+- transaction-value summaries
+- categorical and numerical feature lists
+- output schemas and artifact sizes
+- the shared relative-time origin
+
+Processed artifacts are local generated data and are excluded from Git.
+
+### Rebuilding artifacts
+
+Existing outputs are protected from accidental replacement. To rebuild them
+intentionally:
+
+```bash
+python scripts/materialize_phase1.py --overwrite
+```
+
+Alternative locations can be supplied when needed:
+
+```bash
+python scripts/materialize_phase1.py \
+  --raw-dir /path/to/raw \
+  --processed-dir /path/to/processed
+```
+
+The materializer can also be invoked as a module:
+
+```bash
+python -m scripts.materialize_phase1
+```
