@@ -1,9 +1,10 @@
-"""Train the in-memory LightGBM fraud baseline.
+"""Train and persist the LightGBM fraud baseline.
 
 Usage:
     python -m src.train
 
-Model persistence is intentionally deferred to the next Phase 2 commit.
+The output is a versioned joblib bundle containing every component
+required to reproduce inference.
 """
 
 from __future__ import annotations
@@ -25,6 +26,10 @@ from lightgbm import (
 )
 
 from src.evaluation import evaluate_fraud_model
+from src.model_bundle import (
+    build_model_bundle,
+    save_model_bundle,
+)
 from src.model_data import (
     BaselineDatasets,
     load_baseline_datasets,
@@ -33,6 +38,10 @@ from src.preprocessing import CategoricalEncoder
 
 
 DEFAULT_PROCESSED_DIR = Path("data/processed")
+DEFAULT_MODEL_OUTPUT = Path(
+    "models/payguard_baseline.joblib"
+)
+DEFAULT_MODEL_VERSION = "baseline-v1"
 
 DEFAULT_SEED = 42
 DEFAULT_N_JOBS = -1
@@ -533,6 +542,22 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--model-output",
+        type=Path,
+        default=DEFAULT_MODEL_OUTPUT,
+        help="Destination for the joblib model bundle.",
+    )
+    parser.add_argument(
+        "--model-version",
+        default=DEFAULT_MODEL_VERSION,
+        help="Version identifier stored in the bundle.",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing model bundle.",
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         default=DEFAULT_SEED,
@@ -599,7 +624,35 @@ def main() -> None:
         config=config,
     )
 
+    bundle = build_model_bundle(
+        model=result.model,
+        encoder=result.encoder,
+        feature_contract=(
+            datasets.feature_contract
+        ),
+        training_config=asdict(
+            result.config
+        ),
+        scale_pos_weight=(
+            result.scale_pos_weight
+        ),
+        best_iteration=result.best_iteration,
+        validation_metrics=(
+            result.validation_metrics
+        ),
+        dataset_manifest=datasets.manifest,
+        model_version=args.model_version,
+    )
+
+    model_output = save_model_bundle(
+        bundle,
+        args.model_output,
+        overwrite=args.overwrite,
+    )
+
     summary = {
+        "model_output": str(model_output),
+        "model_version": bundle.model_version,
         "training_config": asdict(result.config),
         "scale_pos_weight": (
             result.scale_pos_weight
