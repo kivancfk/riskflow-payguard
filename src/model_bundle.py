@@ -21,7 +21,7 @@ from src.model_data import FeatureContract
 from src.preprocessing import CategoricalEncoder
 
 
-MODEL_BUNDLE_SCHEMA_VERSION = 1
+MODEL_BUNDLE_SCHEMA_VERSION = 2
 
 PathLike = str | Path
 
@@ -46,6 +46,7 @@ class ModelBundle:
     best_iteration: int
 
     validation_metrics: dict[str, Any]
+    test_metrics: dict[str, Any] | None
     dataset_manifest: dict[str, Any]
 
     def predict_fraud_probabilities(
@@ -317,6 +318,17 @@ def _validate_model_bundle(
                 f"{field_name} must be a dictionary"
             )
 
+    if (
+        bundle.test_metrics is not None
+        and not isinstance(
+            bundle.test_metrics,
+            dict,
+        )
+    ):
+        raise ValueError(
+            "test_metrics must be a dictionary or None"
+        )
+
     return bundle
 
 
@@ -329,6 +341,7 @@ def build_model_bundle(
     scale_pos_weight: float,
     best_iteration: int,
     validation_metrics: Mapping[str, Any],
+    test_metrics: Mapping[str, Any] | None,
     dataset_manifest: Mapping[str, Any],
     model_version: str,
     created_at_utc: str | None = None,
@@ -370,6 +383,13 @@ def build_model_bundle(
         best_iteration=best_iteration,
         validation_metrics=copy.deepcopy(
             dict(validation_metrics)
+        ),
+        test_metrics=(
+            copy.deepcopy(
+                dict(test_metrics)
+            )
+            if test_metrics is not None
+            else None
         ),
         dataset_manifest=copy.deepcopy(
             dict(dataset_manifest)

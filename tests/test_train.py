@@ -21,6 +21,7 @@ from src.preprocessing import (
 from src.train import (
     TrainingConfig,
     calculate_scale_pos_weight,
+    evaluate_training_result_on_split,
     train_baseline_model,
 )
 
@@ -348,3 +349,35 @@ def test_training_rejects_invalid_configuration_and_target(
                 dtype="int8",
             )
         )
+
+
+def test_frozen_model_evaluates_test_split() -> None:
+    datasets = _make_datasets()
+
+    result = train_baseline_model(
+        datasets,
+        config=_training_config(),
+    )
+
+    metrics = evaluate_training_result_on_split(
+        result,
+        datasets.test,
+        split_name="test",
+    )
+
+    probability_metrics = metrics[
+        "probability_metrics"
+    ]
+
+    assert (
+        probability_metrics[
+            "transaction_count"
+        ]
+        == len(datasets.test.target)
+    )
+    assert (
+        probability_metrics["pr_auc"]
+        > probability_metrics["fraud_rate"]
+    )
+    assert len(metrics["review_capacity"]) == 4
+

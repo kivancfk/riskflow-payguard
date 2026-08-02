@@ -32,6 +32,7 @@ from src.model_bundle import (
 )
 from src.model_data import (
     BaselineDatasets,
+    LabeledDataset,
     load_baseline_datasets,
 )
 from src.preprocessing import CategoricalEncoder
@@ -523,6 +524,43 @@ def train_baseline_model(
     )
 
 
+def evaluate_training_result_on_split(
+    result: BaselineTrainingResult,
+    dataset: LabeledDataset,
+    *,
+    split_name: str,
+) -> dict[str, Any]:
+    """Evaluate a frozen model on one labeled split."""
+    if not isinstance(split_name, str) or not split_name.strip():
+        raise ValueError(
+            "split_name must be a non-empty string"
+        )
+
+    encoded_features = result.encoder.transform(
+        dataset.features,
+        frame_name=f"{split_name.strip()} features",
+    )
+
+    probabilities = _predict_positive_class(
+        result.model,
+        encoded_features,
+        best_iteration=result.best_iteration,
+    )
+
+    transaction_amounts = None
+
+    if "TransactionAmt" in dataset.features.columns:
+        transaction_amounts = dataset.features[
+            "TransactionAmt"
+        ]
+
+    return evaluate_fraud_model(
+        dataset.target,
+        probabilities,
+        transaction_amounts=transaction_amounts,
+    )
+
+
 def parse_args() -> argparse.Namespace:
     """Parse the temporary in-memory training CLI."""
     parser = argparse.ArgumentParser(
@@ -556,6 +594,14 @@ def parse_args() -> argparse.Namespace:
         "--overwrite",
         action="store_true",
         help="Replace an existing model bundle.",
+    )
+    parser.add_argument(
+        "--skip-test-evaluation",
+        action="store_true",
+        help=(
+            "Train and save without evaluating the "
+            "chronological test split."
+        ),
     )
     parser.add_argument(
         "--seed",
@@ -624,6 +670,17 @@ def main() -> None:
         config=config,
     )
 
+    test_metrics = None
+
+    if not args.skip_test_evaluation:
+        test_metrics = (
+            evaluate_training_result_on_split(
+                result,
+                datasets.test,
+                split_name="test",
+            )
+        )
+
     bundle = build_model_bundle(
         model=result.model,
         encoder=result.encoder,
@@ -640,6 +697,7 @@ def main() -> None:
         validation_metrics=(
             result.validation_metrics
         ),
+        test_metrics=test_metrics,
         dataset_manifest=datasets.manifest,
         model_version=args.model_version,
     )
@@ -661,6 +719,7 @@ def main() -> None:
         "validation_metrics": (
             result.validation_metrics
         ),
+        "test_metrics": test_metrics,
     }
 
     print(

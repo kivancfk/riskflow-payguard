@@ -145,6 +145,11 @@ def _make_bundle(
                 "pr_auc": 0.80,
             }
         },
+        test_metrics={
+            "probability_metrics": {
+                "pr_auc": 0.75,
+            }
+        },
         dataset_manifest={
             "schema_version": 1,
         },
@@ -211,6 +216,11 @@ def test_model_bundle_round_trip_preserves_predictions(
         "baseline-test-v1"
     )
     assert restored.best_iteration == 10
+    assert restored.test_metrics == {
+        "probability_metrics": {
+            "pr_auc": 0.75,
+        }
+    }
     assert restored.feature_columns == (
         FEATURE_CONTRACT.feature_columns
     )
