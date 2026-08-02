@@ -86,6 +86,15 @@ class BaselineDatasets:
     manifest: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ValidationDatasetBundle:
+    """Validated validation data without loading other splits."""
+
+    validation: LabeledDataset
+    feature_contract: FeatureContract
+    manifest: dict[str, Any]
+
+
 def _validate_artifact(path: Path) -> None:
     """Require a non-empty file at the expected artifact path."""
     if not path.exists():
@@ -573,3 +582,36 @@ def load_baseline_datasets(
         feature_contract=contract,
         manifest=manifest,
     )
+
+def load_validation_dataset(
+    processed_dir: PathLike = Path("data/processed"),
+) -> ValidationDatasetBundle:
+    """Load validation data without reading train or test Parquet."""
+
+    processed_path = Path(processed_dir).resolve()
+
+    metadata = _load_feature_metadata(
+        processed_path / FEATURE_METADATA_FILE
+    )
+    manifest = _load_manifest(
+        processed_path / DATASET_MANIFEST_FILE
+    )
+    contract = _build_feature_contract(
+        metadata,
+        manifest,
+    )
+    expected_rows = _expected_split_rows(manifest)
+
+    validation = _load_labeled_split(
+        processed_path / SPLIT_FILES[VALIDATION_SPLIT],
+        VALIDATION_SPLIT,
+        contract,
+        expected_rows[VALIDATION_SPLIT],
+    )
+
+    return ValidationDatasetBundle(
+        validation=validation,
+        feature_contract=contract,
+        manifest=manifest,
+    )
+
