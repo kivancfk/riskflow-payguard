@@ -911,3 +911,54 @@ Phase 3 is complete when:
 * the complete automated test suite passes
 * generated datasets, reports, logs, and model artifacts remain outside Git
 * final results and known limitations are documented
+
+## Phase 3 completion record
+
+Phase 3 was completed on 2 August 2026.
+
+Implemented deliverables:
+
+- chronological validation partitioning into calibration-fit and
+  policy-selection segments
+- probability calibration and reliability diagnostics
+- identity, sigmoid, and isotonic calibration candidates
+- deterministic calibrator selection
+- raw-score and calibrated-score drift diagnostics
+- categorical missing-value and unknown-category diagnostics
+- explicit decision-policy costs and operational constraints
+- deterministic `ALLOW`, `REVIEW`, and `BLOCK` threshold search
+- versioned calibrated policy bundle
+- atomic artifact persistence and post-load validation
+- raw-feature policy inference
+- validation-only policy-development workflow
+- final one-time chronological test evaluation
+
+Frozen configuration:
+
+- baseline model: `baseline-v1`
+- policy version: `calibrated-policy-v1`
+- calibrator: sigmoid
+- review threshold: `0.16255069862369795`
+- block threshold: `0.8509223095305902`
+- maximum review rate: `5%`
+- maximum block rate: `1%`
+- maximum intervention rate: `6%`
+
+Final chronological test results:
+
+| Metric | Result |
+|---|---:|
+| PR-AUC | 0.494612 |
+| ROC-AUC | 0.880848 |
+| Calibrated log loss | 0.101439 |
+| Calibrated Brier score | 0.023792 |
+| Review rate | 4.442% |
+| Block rate | 0.000% |
+| Review precision | 42.490% |
+| Fraud intervention recall | 54.233% |
+| Fraud amount capture | 21.127% |
+| Modeled cost reduction versus all-allow | 19.452% |
+
+The final test result did not alter any frozen development choice.
+Future calibration or threshold changes require a new policy version and
+new validation evidence.

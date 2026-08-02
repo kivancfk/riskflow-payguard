@@ -2,16 +2,18 @@
 
 ## Status
 
-Phase 3 development is frozen using the chronological validation
-dataset only.
+Phase 3 is complete.
 
-The chronological test dataset has not been loaded or evaluated during
-calibration selection, drift analysis, or policy threshold optimization.
+Calibration selection, drift analysis, and policy threshold optimization
+used only the chronological validation development partitions. After all
+choices were frozen, the resulting artifact was evaluated once against
+the untouched chronological test dataset. No component was revised from
+the test result.
 
 - Policy version: `calibrated-policy-v1`
 - Embedded baseline version: `baseline-v1`
 - Local artifact: `models/payguard_calibrated_policy.joblib`
-- Test evaluation: `null`
+- Test evaluation: complete — final one-time chronological test evaluation
 - Artifact creation time: `2026-08-02T20:08:59.200301+00:00`
 - Artifact size: `4,306,453` bytes
 - Artifact SHA-256:
@@ -267,20 +269,153 @@ The development results support the following conclusions:
 7. The selected thresholds and calibrator are frozen before final test
    evaluation.
 
-## Test-evaluation boundary
+## Final one-time chronological test evaluation
 
-No Phase 3 decision was based on the chronological test dataset.
+The frozen `calibrated-policy-v1` artifact was evaluated once after all
+calibration and threshold decisions had been recorded.
 
-The following remain frozen for the final one-time test evaluation:
+The SHA-256 hash was identical before and after evaluation:
 
-- embedded baseline model: `baseline-v1`
-- calibrator: sigmoid
+`5d53f23719ae891ecc24585393585765aa7fc0900ab38f95e37f59c18fe6c90f`
+
+No calibrator, threshold, cost assumption, constraint, feature contract,
+or model parameter was revised from the test result.
+
+### Test split
+
+| Field | Value |
+|---|---:|
+| Transactions | 88,581 |
+| Fraud count | 3,083 |
+| Fraud rate | 3.4804% |
+| First TransactionID | 3,488,959 |
+| Last TransactionID | 3,577,539 |
+
+### Raw and calibrated probability performance
+
+| Metric | Raw baseline | Sigmoid calibrated |
+|---|---:|---:|
+| PR-AUC | 0.494612 | 0.494612 |
+| ROC-AUC | 0.880848 | 0.880848 |
+| Log loss | 0.130046 | **0.101439** |
+| Brier score | 0.033580 | **0.023792** |
+
+Sigmoid calibration improved probability accuracy while preserving
+ranking performance.
+
+The mean calibrated probability was `3.4883%`, close to the observed
+fraud rate of `3.4804%`.
+
+### Calibration diagnostics
+
+| Metric | Value |
+|---|---:|
+| Expected calibration error | 0.010240 |
+| Maximum calibration error | 0.210560 |
+| Calibration intercept | -0.395917 |
+| Calibration slope | 0.832946 |
+| Minimum calibrated probability | 0.006789 |
+| Maximum calibrated probability | 0.850920 |
+
+The intercept and slope indicate some temporal calibration degradation,
+but overall probability levels remained close to observed prevalence.
+
+### Review-capacity performance
+
+| Review capacity | Fraud recall | Review precision | Fraud amount capture |
+|---|---:|---:|---:|
+| 0.5% | 12.812% | 89.165% | 6.438% |
+| 1.0% | 24.100% | 83.860% | 14.158% |
+| 2.0% | 39.572% | 68.849% | 26.955% |
+| 5.0% | 56.017% | 38.984% | 44.174% |
+
+### Frozen policy performance
+
+The frozen thresholds were:
+
 - review threshold: `0.16255069862369795`
 - block threshold: `0.8509223095305902`
-- cost assumptions
-- operational constraints
-- candidate-selection rules
-- threshold-search rules
 
-The final test evaluation will be recorded separately and will not be
-used to revise these choices.
+| Metric | Test result |
+|---|---:|
+| Allow count | 84,646 |
+| Allow rate | 95.558% |
+| Review count | 3,935 |
+| Review rate | 4.442% |
+| Block count | 0 |
+| Block rate | 0.000% |
+| Total intervention rate | 4.442% |
+| Review fraud count | 1,672 |
+| Review precision | 42.490% |
+| Fraud intervention recall | 54.233% |
+| Expected fraud capture rate | 27.116% |
+| Fraud amount capture rate | 21.127% |
+| Fraud amount captured | 99,216.3350 |
+| Modeled total cost | 378,262.1860 |
+| Average modeled cost per transaction | 4.2702 |
+
+The policy satisfied all frozen operational constraints, with no
+constraint violations.
+
+### Block-threshold observation
+
+The maximum calibrated test probability was
+`0.8509198705494854`.
+
+This was slightly below the frozen block threshold of
+`0.8509223095305902`.
+
+Therefore, no test transactions received a `BLOCK` decision. During the
+test period, the policy operated as an `ALLOW` or `REVIEW` policy.
+
+The block threshold must not be lowered based on this test result. Any
+future threshold revision requires a new policy version and new
+validation evidence.
+
+### Comparison with all-allow
+
+| Metric | All-allow | Frozen policy |
+|---|---:|---:|
+| Modeled total cost | 469,608.5210 | 378,262.1860 |
+| Average cost per transaction | 5.3015 | 4.2702 |
+| Prevented fraud loss | 0.0000 | 99,216.3350 |
+| Intervention rate | 0.000% | 4.442% |
+
+Under the frozen development assumptions:
+
+- modeled cost savings: `91,346.3350`
+- modeled cost reduction: `19.4516%`
+
+These are scenario results based on assumed costs and a 50% review fraud
+capture rate. They are not measured production savings.
+
+### Development-to-test stability
+
+| Metric | Policy selection | Final test |
+|---|---:|---:|
+| Review rate | 4.001% | 4.442% |
+| Block rate | 0.002% | 0.000% |
+| Review precision | 42.607% | 42.490% |
+| Fraud intervention recall | 52.174% | 54.233% |
+| Fraud amount capture | 22.019% | 21.127% |
+| Modeled cost reduction | 20.411% | 19.452% |
+
+The frozen policy generalized consistently from policy selection to the
+chronological test period.
+
+## Phase 3 conclusion
+
+Phase 3 delivered:
+
+- chronological calibration and policy partitions
+- identity, sigmoid, and isotonic calibration candidates
+- deterministic sigmoid selection
+- probability and categorical drift diagnostics
+- explicit policy costs and operational constraints
+- deterministic `ALLOW`, `REVIEW`, and `BLOCK` threshold optimization
+- a versioned and atomically persisted policy bundle
+- raw-feature calibrated-policy inference
+- a final one-time chronological test evaluation
+
+The resulting policy is a technical and portfolio benchmark, not a
+production payment-authorization system.
