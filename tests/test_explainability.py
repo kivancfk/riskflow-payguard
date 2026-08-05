@@ -15,6 +15,7 @@ from src.explainability import (
     OBSERVED,
     UNKNOWN_CATEGORY,
     FeatureContribution,
+    select_top_contributions,
 )
 
 
@@ -246,4 +247,353 @@ def test_negligible_contributions_are_rejected(
     ):
         FeatureContribution(
             **arguments
+        )
+
+
+def test_top_contributions_are_ordered_deterministically() -> None:
+    arguments = {
+        "feature_names": [
+            "positive_first",
+            "positive_second",
+            "positive_smaller",
+            "negative_first",
+            "negative_second",
+            "negative_smaller",
+            "zero",
+        ],
+        "shap_values_raw": [
+            0.5,
+            0.5,
+            0.2,
+            -0.9,
+            -0.9,
+            -0.2,
+            0.0,
+        ],
+        "feature_groups": [
+            "GROUP_0",
+            "GROUP_1",
+            "GROUP_2",
+            "GROUP_3",
+            "GROUP_4",
+            "GROUP_5",
+            "GROUP_6",
+        ],
+        "value_states": [
+            OBSERVED,
+            MISSING,
+            UNKNOWN_CATEGORY,
+            OBSERVED,
+            MISSING,
+            UNKNOWN_CATEGORY,
+            OBSERVED,
+        ],
+        "top_k": 2,
+    }
+
+    first = select_top_contributions(
+        **arguments
+    )
+    second = select_top_contributions(
+        **arguments
+    )
+
+    assert first == second
+
+    assert [
+        contribution.feature
+        for contribution in (
+            first.top_positive_contributions
+        )
+    ] == [
+        "positive_first",
+        "positive_second",
+    ]
+
+    assert [
+        contribution.feature_index
+        for contribution in (
+            first.top_positive_contributions
+        )
+    ] == [0, 1]
+
+    assert [
+        contribution.rank
+        for contribution in (
+            first.top_positive_contributions
+        )
+    ] == [1, 2]
+
+    assert [
+        contribution.feature
+        for contribution in (
+            first.top_negative_contributions
+        )
+    ] == [
+        "negative_first",
+        "negative_second",
+    ]
+
+    assert [
+        contribution.feature_index
+        for contribution in (
+            first.top_negative_contributions
+        )
+    ] == [3, 4]
+
+    assert [
+        contribution.rank
+        for contribution in (
+            first.top_negative_contributions
+        )
+    ] == [1, 2]
+
+    assert (
+        first.top_positive_contributions[1]
+        .value_state
+        == MISSING
+    )
+    assert (
+        first.top_negative_contributions[1]
+        .feature_group
+        == "GROUP_4"
+    )
+
+
+def test_negligible_values_are_excluded_from_selection() -> None:
+    selection = select_top_contributions(
+        feature_names=[
+            "zero",
+            "positive_boundary",
+            "negative_boundary",
+            "positive_included",
+            "negative_included",
+        ],
+        shap_values_raw=[
+            0.0,
+            1e-12,
+            -1e-12,
+            1.1e-12,
+            -1.1e-12,
+        ],
+        feature_groups=[
+            "GROUP",
+            "GROUP",
+            "GROUP",
+            "GROUP",
+            "GROUP",
+        ],
+        value_states=[
+            OBSERVED,
+            OBSERVED,
+            OBSERVED,
+            OBSERVED,
+            OBSERVED,
+        ],
+    )
+
+    assert [
+        contribution.feature
+        for contribution in (
+            selection.top_positive_contributions
+        )
+    ] == ["positive_included"]
+
+    assert [
+        contribution.feature
+        for contribution in (
+            selection.top_negative_contributions
+        )
+    ] == ["negative_included"]
+
+
+def test_selection_allows_one_direction_to_be_empty() -> None:
+    selection = select_top_contributions(
+        feature_names=[
+            "positive_one",
+            "positive_two",
+        ],
+        shap_values_raw=[
+            0.3,
+            0.1,
+        ],
+        feature_groups=[
+            "GROUP",
+            "GROUP",
+        ],
+        value_states=[
+            OBSERVED,
+            MISSING,
+        ],
+    )
+
+    assert len(
+        selection.top_positive_contributions
+    ) == 2
+    assert (
+        selection.top_negative_contributions
+        == ()
+    )
+
+
+@pytest.mark.parametrize(
+    "top_k",
+    [
+        0,
+        True,
+    ],
+)
+def test_selection_rejects_invalid_top_k(
+    top_k: object,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="top_k must be an integer",
+    ):
+        select_top_contributions(
+            feature_names=["feature"],
+            shap_values_raw=[0.1],
+            feature_groups=["GROUP"],
+            value_states=[OBSERVED],
+            top_k=top_k,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    (
+        "shap_values_raw",
+        "feature_groups",
+        "value_states",
+    ),
+    [
+        (
+            [0.1],
+            ["GROUP", "GROUP"],
+            [OBSERVED, OBSERVED],
+        ),
+        (
+            [0.1, 0.2],
+            ["GROUP"],
+            [OBSERVED, OBSERVED],
+        ),
+        (
+            [0.1, 0.2],
+            ["GROUP", "GROUP"],
+            [OBSERVED],
+        ),
+    ],
+)
+def test_selection_rejects_misaligned_inputs(
+    shap_values_raw: list[float],
+    feature_groups: list[str],
+    value_states: list[str],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="must have the same length",
+    ):
+        select_top_contributions(
+            feature_names=[
+                "feature_0",
+                "feature_1",
+            ],
+            shap_values_raw=shap_values_raw,
+            feature_groups=feature_groups,
+            value_states=value_states,
+        )
+
+
+def test_selection_rejects_empty_feature_contract() -> None:
+    with pytest.raises(
+        ValueError,
+        match="feature_names must contain",
+    ):
+        select_top_contributions(
+            feature_names=[],
+            shap_values_raw=[],
+            feature_groups=[],
+            value_states=[],
+        )
+
+
+def test_selection_rejects_duplicate_feature_names() -> None:
+    with pytest.raises(
+        ValueError,
+        match="feature_names must be unique",
+    ):
+        select_top_contributions(
+            feature_names=[
+                "duplicate",
+                "duplicate",
+            ],
+            shap_values_raw=[
+                0.1,
+                -0.1,
+            ],
+            feature_groups=[
+                "GROUP",
+                "GROUP",
+            ],
+            value_states=[
+                OBSERVED,
+                OBSERVED,
+            ],
+        )
+
+
+@pytest.mark.parametrize(
+    "shap_value_raw",
+    [
+        float("nan"),
+        float("inf"),
+    ],
+)
+def test_selection_rejects_non_finite_shap_values(
+    shap_value_raw: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="finite",
+    ):
+        select_top_contributions(
+            feature_names=["feature"],
+            shap_values_raw=[shap_value_raw],
+            feature_groups=["GROUP"],
+            value_states=[OBSERVED],
+        )
+
+
+@pytest.mark.parametrize(
+    (
+        "feature_groups",
+        "value_states",
+        "message",
+    ),
+    [
+        (
+            [""],
+            [OBSERVED],
+            "non-empty string",
+        ),
+        (
+            ["GROUP"],
+            ["UNSEEN"],
+            "value_states\\[0\\]",
+        ),
+    ],
+)
+def test_selection_validates_all_feature_metadata(
+    feature_groups: list[str],
+    value_states: list[str],
+    message: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=message,
+    ):
+        select_top_contributions(
+            feature_names=["feature"],
+            shap_values_raw=[0.0],
+            feature_groups=feature_groups,
+            value_states=value_states,
         )
