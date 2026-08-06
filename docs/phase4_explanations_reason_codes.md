@@ -1,6 +1,6 @@
 # Phase 4 — SHAP Explanations and Reason Codes
 
-> **Status: Planned**
+> **Status: Complete**
 >
 > Phase 4 starts from the completed Phase 3 merge commit
 > `5ec1670`.
@@ -24,6 +24,8 @@ transaction
     -> calibrated fraud probability
     -> ALLOW / REVIEW / BLOCK decision
     -> SHAP contributions and analyst-facing reason codes
+```
+
 The phase will:
 
 extract LightGBM SHAP contributions
@@ -566,3 +568,42 @@ the frozen artifact hashes and policy values remain unchanged
 focused explanation tests pass
 the complete repository test suite passes
 final Phase 4 results are documented
+
+## Phase 4 completion record
+
+Phase 4 was completed on 6 August 2026.
+
+Implemented deliverables:
+
+- immutable explanation and contribution contracts
+- native LightGBM TreeSHAP extraction
+- deterministic positive and negative contribution ranking
+- observed, missing, and unknown-category value states
+- stable feature-group mappings
+- versioned analyst reason codes and messages
+- reason-code deduplication
+- raw-margin reconstruction
+- raw model-score reconstruction
+- calibrated-policy explanation integration
+- score-only and explanation-enabled output parity
+- deterministic batch and individual-row behaviour
+- policy artifact reload parity
+- frozen artifact and model-state immutability checks
+
+Frozen configuration:
+
+- model version: `baseline-v1`
+- policy version: `calibrated-policy-v1`
+- explanation version: `shap-explanation-v1`
+- reason-code version: `reason-codes-v1`
+- reconstruction tolerance: `1e-8`
+- review threshold: `0.16255069862369795`
+- block threshold: `0.8509223095305902`
+- policy SHA-256:
+  `5d53f23719ae891ecc24585393585765aa7fc0900ab38f95e37f59c18fe6c90f`
+
+Focused Phase 4 validation contains 147 tests. The complete repository
+test suite also passed before Phase 4 completion.
+
+See [`phase4_results.md`](phase4_results.md) for the implementation
+summary, validation evidence, interpretation guidance, and limitations.

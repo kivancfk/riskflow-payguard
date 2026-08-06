@@ -8,14 +8,15 @@ The project is being developed as a deployable fintech-style product rather than
 
 ## Current Status
 
-The data, baseline-model, probability-calibration, drift-diagnostic, and decision-policy foundations are complete.
+The data, baseline-model, probability-calibration, drift-diagnostic, decision-policy, and deterministic explanation foundations are complete.
 
 | Phase | Status | Deliverable |
 |---|---|---|
 | Phase 1 | Complete | Local data workflow, EDA, feature engineering, and chronological model datasets |
 | Phase 2 | Complete | Reproducible LightGBM baseline, fraud-focused evaluation, and versioned model bundle |
 | Phase 3 | Complete | Probability calibration, drift diagnostics, policy optimization, and versioned policy bundle |
-| Product integration | Planned | SHAP, API prediction, dashboard, monitoring, and deployment |
+| Phase 4 | Complete | Native LightGBM TreeSHAP, deterministic contributions, reason codes, and artifact immutability checks |
+| Product integration | Planned | API prediction, dashboard, monitoring, and deployment |
 
 ### Implemented
 
@@ -40,13 +41,20 @@ The data, baseline-model, probability-calibration, drift-diagnostic, and decisio
 - Versioned calibrated policy bundle
 - Artifact overwrite protection and post-load validation
 - Raw-feature calibrated-policy inference
+- Native LightGBM TreeSHAP contribution extraction
+- Raw-margin and raw-score reconstruction validation
+- Deterministic top positive and negative contributions
+- Stable versioned analyst reason codes
+- Observed, missing, and unknown-category explanation states
+- Explanation-enabled calibrated-policy inference
+- Batch and individual-row explanation parity
+- Frozen model and policy artifact immutability checks
 - Reloaded-bundle inference tests
 - Automated pytest coverage
 
 ### Not Yet Implemented
 
-- SHAP explanations and reason codes
-- Production `/predict` integration
+- Production `/predict` explanation integration
 - Batch prediction integration
 - Prediction logging and monitoring alerts
 - Streamlit monitoring dashboard
@@ -128,6 +136,29 @@ See:
 
 - [`docs/phase3_results.md`](docs/phase3_results.md)
 - [`docs/phase3_calibration_thresholds.md`](docs/phase3_calibration_thresholds.md)
+
+---
+
+## Phase 4 Explanation Results
+
+The frozen `baseline-v1` LightGBM model now supports native TreeSHAP
+explanations integrated with `calibrated-policy-v1`.
+
+TreeSHAP contributions reconstruct the raw model margin within an absolute
+tolerance of `1e-8`. Explanation-enabled inference preserves the existing raw
+score, calibrated probability, decision, and row order.
+
+The explanation layer is read-only. Frozen model trees, categorical
+vocabularies, calibration parameters, policy thresholds, and artifact bytes
+remain unchanged.
+
+Reason codes describe model signals and must not be interpreted as causal
+evidence of fraud.
+
+See:
+
+- [`docs/phase4_results.md`](docs/phase4_results.md)
+- [`docs/phase4_explanations_reason_codes.md`](docs/phase4_explanations_reason_codes.md)
 
 ---
 
@@ -392,7 +423,7 @@ tests/        Automated pytest suite
 - [x] Phase 1 — Data setup, EDA, feature engineering, and chronological datasets
 - [x] Phase 2 — LightGBM baseline, evaluation, and versioned model bundle
 - [x] Phase 3 — Probability calibration, drift analysis, and decision thresholds
-- [ ] Phase 4 — SHAP explanations and reason codes
+- [x] Phase 4 — SHAP explanations and reason codes
 - [ ] Phase 5 — RiskFlow PayGuard API prediction integration
 - [ ] Phase 6 — Monitoring and threshold-simulation dashboard
 - [ ] Phase 7 — Docker and cloud deployment
@@ -409,7 +440,8 @@ Principal limitations include:
 
 - Development cost assumptions are not validated against production data
 - No final-test transaction reached the frozen block threshold
-- No SHAP explanations or stable reason codes
+- SHAP reason codes explain model signals but are not causal evidence
+- SHAP values decompose the raw margin rather than the calibrated probability
 - No dedicated high-value fraud objective
 - No production API integration
 - No live prediction logging or alerting
