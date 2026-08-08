@@ -8,7 +8,7 @@ The project is being developed as a deployable fintech-style product rather than
 
 ## Current Status
 
-The data, baseline-model, probability-calibration, drift-diagnostic, decision-policy, deterministic explanation, and FastAPI inference foundations are complete.
+The data, baseline-model, probability-calibration, drift-diagnostic, decision-policy, deterministic explanation, FastAPI inference, prediction persistence, monitoring, and read-only threshold-simulation foundations are complete.
 
 | Phase | Status | Deliverable |
 |---|---|---|
@@ -17,7 +17,8 @@ The data, baseline-model, probability-calibration, drift-diagnostic, decision-po
 | Phase 3 | Complete | Probability calibration, drift diagnostics, policy optimization, and versioned policy bundle |
 | Phase 4 | Complete | Native LightGBM TreeSHAP, deterministic contributions, reason codes, and artifact immutability checks |
 | Phase 5 | Complete | Strict FastAPI inference, frozen-policy loading, model metadata, single/batch prediction, parity, and immutability checks |
-| Phase 6+ | Planned | Prediction monitoring, dashboarding, threshold simulation, deployment, and portfolio polish |
+| Phase 6 | Complete | Prediction persistence, outcome labeling, read-only monitoring, Streamlit monitoring, and threshold simulation |
+| Phase 7+ | Planned | Docker/cloud deployment, monitoring alerts, and portfolio polish |
 
 ### Implemented
 
@@ -66,16 +67,30 @@ The data, baseline-model, probability-calibration, drift-diagnostic, decision-po
 - Standard HTTP 422 validation behavior
 - API-level encoder and policy-artifact immutability checks
 - Deterministic repeated API responses
+- SQLAlchemy prediction-event persistence
+- Local SQLite prediction-event storage
+- Atomic single and batch prediction persistence
+- Repeated transaction-event history without overwriting earlier scores
+- Frozen policy provenance stored with every prediction event
+- Ground-truth outcome-label backfill
+- Conflict-safe and idempotent label updates
+- Read-only monitoring of persisted ALLOW, REVIEW, and BLOCK decisions
+- Label-coverage reporting without unsupported fraud claims
+- Streamlit Monitoring view
+- Temporary read-only threshold scenarios
+- Frozen-versus-candidate workload and decision-transition analysis
+- Label-gated fraud and development-economics comparison
+- Streamlit Threshold Simulator with no save, apply, or promote workflow
 
 ### Not Yet Implemented
 
-- Prediction logging and monitoring alerts
-- Streamlit monitoring dashboard
-- Threshold-simulation workflow
+- Automated monitoring alerts
+- Automated ground-truth ingestion
+- Database migrations and production PostgreSQL validation
 - Production cost-assumption validation
 - Cloud deployment
 
-The FastAPI application is implemented for Phase 5. The dashboard directory remains a scaffold for later phases.
+The Phase 5 FastAPI inference contract remains frozen. Phase 6 adds local prediction persistence and a read-only Streamlit monitoring/simulation layer around that existing inference system.
 
 ---
 
@@ -270,13 +285,16 @@ Generated model artifacts are written under `models/` and remain excluded from G
 - Pydantic v2
 - Uvicorn
 - SHAP / native LightGBM TreeSHAP explanations
+- SQLAlchemy prediction-event persistence
+- SQLite for local prediction logs
+- Streamlit monitoring and threshold simulation
 
 ### Planned Next Product Layer
 
-- Streamlit
-- SQLite for local prediction logs
-- PostgreSQL for deployment
+- Production PostgreSQL validation and migrations
 - Docker
+- Cloud deployment
+- Monitoring alerts
 
 ---
 
@@ -333,7 +351,20 @@ startup to fail rather than silently falling back to another model.
 Interactive OpenAPI documentation is available from the local FastAPI `/docs`
 route while the service is running.
 
-### 6. Train a local development model
+### 6. Run the Phase 6 dashboard locally
+
+In a second terminal, start Streamlit with:
+
+    python -m streamlit run dashboard/app.py
+
+The API and dashboard use the same configured prediction database. The default
+local database URL is `sqlite:///./predictions.db`.
+
+Successful `/predict` and `/batch-predict` requests populate the monitoring
+store. The Threshold Simulator uses temporary candidate thresholds only and
+does not modify the frozen production policy or persisted production decisions.
+
+### 7. Train a local development model
 
 Use `--skip-test-evaluation` during development to avoid repeatedly inspecting the frozen chronological test split:
 
@@ -347,7 +378,7 @@ python -m src.train \
 
 The published `baseline-v1` test results are already recorded. Further implementation decisions should not be tuned against that test result.
 
-### 7. Load a saved bundle
+### 8. Load a saved bundle
 
 ```python
 from src.model_bundle import load_model_bundle
@@ -400,7 +431,7 @@ prediction logging
 monitoring and threshold dashboard
 ```
 
-The baseline model bundle, calibrated policy bundle, deterministic explanation layer, and Phase 5 API prediction integration now exist. Prediction logging, monitoring, threshold simulation, and deployment remain future work.
+The baseline model bundle, calibrated policy bundle, deterministic explanation layer, Phase 5 API prediction integration, Phase 6 prediction persistence, monitoring, and read-only threshold simulation now exist. Deployment, automated alerts, production database operations, and production governance remain future work.
 
 ---
 
@@ -433,8 +464,7 @@ Implemented endpoints:
 | `POST` | `/predict` | Score and explain one transaction |
 | `POST` | `/batch-predict` | Score and explain an ordered transaction batch |
 
-Prediction logging, `/recent-predictions`, and `/threshold-simulation` are not
-part of the Phase 5 application surface and remain later-phase concerns.
+Prediction logging was intentionally not part of the Phase 5 application surface. Phase 6 now persists successful prediction events behind the existing prediction endpoints and provides monitoring and threshold simulation through the local Streamlit dashboard. `/recent-predictions` and `/threshold-simulation` HTTP endpoints were intentionally not added.
 
 See [`docs/phase5_api_integration.md`](docs/phase5_api_integration.md) for the
 complete API contract, implementation record, parity requirements, and final
@@ -442,11 +472,42 @@ verification evidence.
 
 ---
 
+## Implemented Phase 6 Monitoring and Threshold Simulation
+
+Phase 6 adds a local operational layer around the frozen Phase 5 inference
+system without changing how transactions are scored, calibrated, explained,
+or assigned under the production policy.
+
+Implemented capabilities include:
+
+- append-only prediction-event persistence
+- atomic single and batch persistence
+- outcome-label backfill
+- read-only monitoring of persisted decisions
+- label-coverage reporting
+- temporary candidate threshold scenarios
+- frozen-versus-candidate workload comparison
+- decision-transition analysis
+- operational constraint evaluation
+- label-gated fraud and development-economics comparison
+- Streamlit Monitoring and Threshold Simulator views
+- no save, apply, or promote threshold workflow
+
+The simulator reuses the existing policy decision and evaluation functions.
+It does not search for optimized thresholds or modify the frozen policy
+artifact.
+
+See [`docs/phase6_monitoring_dashboard.md`](docs/phase6_monitoring_dashboard.md)
+for the complete Phase 6 persistence, monitoring, simulation, and verification
+record.
+
+---
+
 ## Project Structure
 
 ```text
-api/          FastAPI application, strict schemas, frozen-policy loading, feature frames, and prediction services
-dashboard/    Streamlit dashboard scaffold
+api/          FastAPI application, frozen-policy loading, prediction services, persistence, and outcome labeling
+dashboard/    Read-only monitoring queries, threshold simulation, and Streamlit views
 data/         Local raw, processed, and sample-payload directories
 db/           Prediction-log database components
 docs/         Architecture, implementation plans, and model results
@@ -465,7 +526,7 @@ tests/        Automated pytest suite
 - [x] Phase 3 — Probability calibration, drift analysis, and decision thresholds
 - [x] Phase 4 — SHAP explanations and reason codes
 - [x] Phase 5 — RiskFlow PayGuard API prediction integration
-- [ ] Phase 6 — Monitoring and threshold-simulation dashboard
+- [x] Phase 6 — Monitoring and threshold-simulation dashboard
 - [ ] Phase 7 — Docker and cloud deployment
 - [ ] Phase 8 — Portfolio polish and product demonstration
 
@@ -484,7 +545,9 @@ Principal limitations include:
 - SHAP values decompose the raw margin rather than the calibrated probability
 - No dedicated high-value fraud objective
 - No deployed service, authentication, rate limiting, or production traffic validation
-- No live prediction logging or alerting
+- Local prediction persistence is implemented, but there is no automated monitoring-alert engine
+- Ground-truth labels require explicit backfill; there is no automated outcome-ingestion pipeline
+- SQLite is the validated local store; database migrations and production PostgreSQL operation remain future work
 - No automated retraining workflow
 - No formal policy approval or model-risk governance process
 
