@@ -17,8 +17,11 @@ from api.feature_frames import (
 )
 from api.prediction_service import (
     predict_transaction,
+    predict_transactions,
 )
 from api.schemas import (
+    BatchPredictRequest,
+    BatchPredictResponse,
     HealthResponse,
     ModelInfoResponse,
     PredictionResponse,
@@ -139,5 +142,20 @@ def predict(
 
     return predict_transaction(
         transaction,
+        model_loader.get_policy(),
+    )
+
+
+@app.post(
+    "/batch-predict",
+    response_model=BatchPredictResponse,
+)
+def batch_predict(
+    request: BatchPredictRequest,
+) -> BatchPredictResponse:
+    """Score and explain an ordered transaction batch using one inference call."""
+
+    return predict_transactions(
+        request.transactions,
         model_loader.get_policy(),
     )

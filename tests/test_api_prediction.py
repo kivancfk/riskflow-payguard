@@ -413,18 +413,3 @@ def test_predict_does_not_modify_frozen_artifact() -> None:
         == FROZEN_POLICY_SHA256
     )
 
-
-def test_batch_prediction_is_not_registered_yet() -> None:
-    """Keep batch integration isolated for the next Phase 5 commit."""
-
-    with TestClient(app) as client:
-        response = client.post(
-            "/batch-predict",
-            json={
-                "transactions": [
-                    _valid_payload()
-                ],
-            },
-        )
-
-    assert response.status_code == 404

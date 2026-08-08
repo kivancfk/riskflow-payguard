@@ -1,12 +1,16 @@
-"""Single-transaction frozen policy inference for the PayGuard API."""
+"""Frozen policy inference services for the PayGuard API."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from api.feature_frames import (
+    build_batch_feature_frame,
     build_feature_frame,
 )
 from api.schemas import (
     AnalystReasonResponse,
+    BatchPredictResponse,
     FeatureContributionResponse,
     PredictionResponse,
     ReconstructionResponse,
@@ -201,4 +205,72 @@ def predict_transaction(
 
     return prediction_response_from_record(
         record
+    )
+
+
+def predict_transactions(
+    transactions: Sequence[
+        TransactionRequest
+    ],
+    bundle: CalibratedPolicyBundle,
+) -> BatchPredictResponse:
+    """Run one ordered request batch through one frozen inference call."""
+
+    transaction_ids, feature_frame = (
+        build_batch_feature_frame(
+            transactions,
+            bundle,
+        )
+    )
+
+    explained_prediction = (
+        predict_policy_with_explanations(
+            bundle,
+            transaction_ids,
+            feature_frame,
+            frame_name=(
+                "API /batch-predict features"
+            ),
+        )
+    )
+
+    records = (
+        explained_prediction.explanations
+    )
+
+    if len(records) != len(
+        transactions
+    ):
+        raise RuntimeError(
+            "Batch prediction inference returned "
+            "an unexpected explanation count"
+        )
+
+    if (
+        explained_prediction.transaction_ids
+        != transaction_ids
+    ):
+        raise RuntimeError(
+            "Batch prediction transaction identifiers "
+            "do not preserve request order"
+        )
+
+    responses = [
+        prediction_response_from_record(
+            record
+        )
+        for record in records
+    ]
+
+    if tuple(
+        response.transaction_id
+        for response in responses
+    ) != transaction_ids:
+        raise RuntimeError(
+            "Serialized batch transaction identifiers "
+            "do not preserve request order"
+        )
+
+    return BatchPredictResponse(
+        predictions=responses
     )
