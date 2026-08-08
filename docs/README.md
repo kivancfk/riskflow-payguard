@@ -15,10 +15,52 @@ stays scannable.
 - [`phase5_api_integration.md`](phase5_api_integration.md) — strict FastAPI inference contract and parity verification
 - [`phase6_monitoring_dashboard.md`](phase6_monitoring_dashboard.md) — prediction persistence, outcome labels, monitoring, and read-only threshold simulation
 - [`phase7_deployment.md`](phase7_deployment.md) — hardened container image, PostgreSQL Compose deployment, persistence portability, and smoke validation
+- [`phase8_portfolio_demo.md`](phase8_portfolio_demo.md) — API-backed Product Demo, portfolio walkthrough, screenshot plan, video plan, and product boundaries
+
+## Current Portfolio Surface
+
+The root [`README.md`](../README.md) is the primary project landing page.
+
+Phase 8 adds a guided Streamlit Product Demo over the existing FastAPI
+inference path. The demonstration is designed to show:
+
+~~~text
+transaction
+    |
+    v
+FastAPI scoring
+    |
+    v
+frozen decision + explanation
+    |
+    v
+prediction persistence
+    |
+    v
+Monitoring
+    |
+    v
+read-only Threshold Simulator
+~~~
+
+The detailed presentation workflow and future screenshot/video capture plan are
+documented in
+[`phase8_portfolio_demo.md`](phase8_portfolio_demo.md).
 
 ## Future Documentation
 
-Later work should document public cloud release, monitoring alerts,
-authentication and production traffic controls, database migrations for schema
-evolution, governance, and portfolio/demo packaging when those capabilities
-are implemented.
+Later work should document capabilities only when they are actually
+implemented, including:
+
+- public-cloud release;
+- monitoring alerts;
+- authentication and authorization;
+- rate limiting and production traffic controls;
+- automated ground-truth ingestion;
+- database migrations for schema evolution;
+- backup and restore procedures;
+- model-risk and policy-approval governance;
+- separately versioned future model or policy releases.
+
+The current documentation should not imply that these future capabilities
+already exist.
