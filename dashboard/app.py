@@ -8,11 +8,18 @@ from api.config import settings
 from api.logging_db import (
     create_prediction_store,
 )
+from api.model_loader import (
+    get_loaded_policy,
+    load_policy,
+)
 from dashboard.monitoring import (
     load_monitoring_snapshot,
 )
 from dashboard.monitoring_view import (
     render_monitoring_view,
+)
+from dashboard.simulation_view import (
+    render_threshold_simulator,
 )
 
 
@@ -59,14 +66,13 @@ try:
         )
 
     else:
-        st.header(
-            "Threshold Simulator"
+        load_policy(
+            settings.policy_path
         )
-        st.info(
-            "The read-only threshold simulator UI will be added "
-            "in the next Phase 6 commit. Candidate thresholds will "
-            "remain temporary and will never be applied or saved "
-            "to the frozen production policy."
+
+        render_threshold_simulator(
+            store,
+            get_loaded_policy(),
         )
 
 finally:
