@@ -1,0 +1,15 @@
+**
+
+!requirements.txt
+
+!api/
+!api/**
+
+!dashboard/
+!dashboard/**
+
+!src/
+!src/**
+
+!models/
+!models/payguard_calibrated_policy.joblib
