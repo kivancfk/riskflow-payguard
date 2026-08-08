@@ -18,7 +18,8 @@ The data, baseline-model, probability-calibration, drift-diagnostic, decision-po
 | Phase 4 | Complete | Native LightGBM TreeSHAP, deterministic contributions, reason codes, and artifact immutability checks |
 | Phase 5 | Complete | Strict FastAPI inference, frozen-policy loading, model metadata, single/batch prediction, parity, and immutability checks |
 | Phase 6 | Complete | Prediction persistence, outcome labeling, read-only monitoring, Streamlit monitoring, and threshold simulation |
-| Phase 7+ | Planned | Docker/cloud deployment, monitoring alerts, and portfolio polish |
+| Phase 7 | Complete | Docker image, PostgreSQL Compose stack, health checks, and deployment smoke validation |
+| Phase 8+ | Planned | Public cloud release, monitoring alerts, governance, and portfolio polish |
 
 ### Implemented
 
@@ -291,7 +292,7 @@ Generated model artifacts are written under `models/` and remain excluded from G
 
 ### Planned Next Product Layer
 
-- Production PostgreSQL validation and migrations
+- Database migration tooling before future schema changes
 - Docker
 - Cloud deployment
 - Monitoring alerts
@@ -503,6 +504,32 @@ record.
 
 ---
 
+## Implemented Phase 7 Deployment Foundation
+
+Phase 7 packages the existing FastAPI and Streamlit application for
+containerized operation without changing the frozen inference contract.
+
+The deployment foundation includes:
+
+- one hardened Python 3.11 application image shared by FastAPI and Streamlit
+- build-time frozen-policy integrity validation
+- non-root container execution
+- PostgreSQL 16 persistence through Docker Compose
+- shared PostgreSQL access for API persistence and dashboard reads
+- health checks for PostgreSQL, FastAPI, and Streamlit
+- named-volume persistence across container recreation
+- PostgreSQL-safe typed transaction-ID label lookup
+- isolated end-to-end deployment smoke validation
+
+Native local execution continues to default to SQLite. PostgreSQL is the
+validated containerized deployment database.
+
+Phase 7 does not claim a public cloud production release.
+
+See [`docs/phase7_deployment.md`](docs/phase7_deployment.md).
+
+---
+
 ## Project Structure
 
 ```text
@@ -514,6 +541,7 @@ docs/         Architecture, implementation plans, and model results
 models/       Local serialized model artifacts
 notebooks/    EDA and analytical notebooks
 src/          Data processing, preprocessing, evaluation, training, and model bundles
+scripts/      Deployment and operational validation utilities
 tests/        Automated pytest suite
 ```
 
@@ -527,7 +555,7 @@ tests/        Automated pytest suite
 - [x] Phase 4 — SHAP explanations and reason codes
 - [x] Phase 5 — RiskFlow PayGuard API prediction integration
 - [x] Phase 6 — Monitoring and threshold-simulation dashboard
-- [ ] Phase 7 — Docker and cloud deployment
+- [x] Phase 7 — Docker and PostgreSQL deployment foundation
 - [ ] Phase 8 — Portfolio polish and product demonstration
 
 ---
@@ -544,10 +572,10 @@ Principal limitations include:
 - SHAP reason codes explain model signals but are not causal evidence
 - SHAP values decompose the raw margin rather than the calibrated probability
 - No dedicated high-value fraud objective
-- No deployed service, authentication, rate limiting, or production traffic validation
+- No public cloud release, authentication, rate limiting, or production traffic validation
 - Local prediction persistence is implemented, but there is no automated monitoring-alert engine
 - Ground-truth labels require explicit backfill; there is no automated outcome-ingestion pipeline
-- SQLite is the validated local store; database migrations and production PostgreSQL operation remain future work
+- SQLite remains the native local default and PostgreSQL is validated through Docker Compose; no schema-migration framework is configured yet
 - No automated retraining workflow
 - No formal policy approval or model-risk governance process
 
