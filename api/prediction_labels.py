@@ -8,8 +8,6 @@ from dataclasses import field
 from datetime import datetime
 from datetime import timezone
 
-from sqlalchemy import JSON
-from sqlalchemy import literal
 from sqlalchemy import select
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -204,12 +202,22 @@ def _transaction_id_predicate(
 ) -> ColumnElement[bool]:
     """Match the exact typed scalar stored in the JSON identifier column."""
 
-    return (
-        PredictionEvent.transaction_id
-        == literal(
-            transaction_id,
-            type_=JSON,
+    json_scalar = (
+        PredictionEvent.transaction_id[()]
+    )
+
+    if isinstance(
+        transaction_id,
+        str,
+    ):
+        return (
+            json_scalar.as_string()
+            == transaction_id
         )
+
+    return (
+        json_scalar.as_integer()
+        == transaction_id
     )
 
 def record_prediction_labels(
