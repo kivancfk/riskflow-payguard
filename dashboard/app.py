@@ -1,34 +1,79 @@
-"""RiskFlow PayGuard Dashboard.
+"""RiskFlow PayGuard Phase 6 monitoring and simulation dashboard."""
 
-Four pages:
-    1. Fraud overview        — volume, fraud rate, decisions split, recent flags
-    2. Model performance     — ROC, PR, confusion matrix at current threshold
-    3. Threshold simulator   — slider over (review, block) thresholds, live
-                               fraud-caught / FP cost / review workload chart
-    4. Explainability        — global SHAP importance, top-N suspicious txns
+from __future__ import annotations
 
-Reads from the same predictions DB the RiskFlow PayGuard API writes to.
-"""
 import streamlit as st
 
-st.set_page_config(page_title="RiskFlow PayGuard Dashboard", layout="wide")
-
-st.title("RiskFlow PayGuard")
-st.caption("Real-Time Payment Fraud Risk Scoring — Dashboard scaffold, wire pages up after the model is trained.")
-
-page = st.sidebar.radio(
-    "Page",
-    ["Fraud overview", "Model performance", "Threshold simulator", "Explainability"],
+from api.config import settings
+from api.logging_db import (
+    create_prediction_store,
+)
+from api.model_loader import (
+    get_loaded_policy,
+    load_policy,
+)
+from dashboard.monitoring import (
+    load_monitoring_snapshot,
+)
+from dashboard.monitoring_view import (
+    render_monitoring_view,
+)
+from dashboard.simulation_view import (
+    render_threshold_simulator,
 )
 
-if page == "Fraud overview":
-    st.info("TODO: volume, fraud rate, decision split, recent flagged transactions.")
-elif page == "Model performance":
-    st.info("TODO: ROC curve, PR curve, confusion matrix at current threshold.")
-elif page == "Threshold simulator":
-    st.info(
-        "TODO: sliders for review/block thresholds; live chart of fraud caught, "
-        "false-positive cost, and manual-review workload."
+
+st.set_page_config(
+    page_title=(
+        "RiskFlow PayGuard Dashboard"
+    ),
+    layout="wide",
+)
+
+st.title(
+    "RiskFlow PayGuard"
+)
+st.caption(
+    "Monitoring and read-only threshold simulation "
+    "around the frozen fraud-scoring policy."
+)
+
+view = st.sidebar.radio(
+    "View",
+    [
+        "Monitoring",
+        "Threshold Simulator",
+    ],
+)
+
+store = (
+    create_prediction_store(
+        settings.database_url
     )
-elif page == "Explainability":
-    st.info("TODO: global SHAP importance + top-N suspicious transactions.")
+)
+store.init_schema()
+
+try:
+    if view == "Monitoring":
+        snapshot = (
+            load_monitoring_snapshot(
+                store
+            )
+        )
+
+        render_monitoring_view(
+            snapshot
+        )
+
+    else:
+        load_policy(
+            settings.policy_path
+        )
+
+        render_threshold_simulator(
+            store,
+            get_loaded_policy(),
+        )
+
+finally:
+    store.dispose()
