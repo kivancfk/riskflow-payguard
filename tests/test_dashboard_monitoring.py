@@ -165,6 +165,28 @@ def _seed_monitoring_data(
         store.dispose()
 
 
+def _open_monitoring() -> AppTest:
+    """Open the dashboard and switch to the Monitoring view."""
+
+    app_test = (
+        AppTest.from_file(
+            "dashboard/app.py"
+        )
+        .run(
+            timeout=10
+        )
+    )
+
+    app_test.sidebar.radio[
+        0
+    ].set_value(
+        "Monitoring"
+    )
+
+    return app_test.run(
+        timeout=10
+    )
+
 def _metric_values(
     app_test: AppTest,
 ) -> dict[
@@ -184,12 +206,7 @@ def test_empty_monitoring_dashboard_smoke() -> None:
     """Render the monitoring view successfully with an empty database."""
 
     app_test = (
-        AppTest.from_file(
-            "dashboard/app.py"
-        )
-        .run(
-            timeout=10
-        )
+        _open_monitoring()
     )
 
     assert (
@@ -263,12 +280,7 @@ def test_populated_monitoring_dashboard_smoke(
     )
 
     app_test = (
-        AppTest.from_file(
-            "dashboard/app.py"
-        )
-        .run(
-            timeout=10
-        )
+        _open_monitoring()
     )
 
     assert (

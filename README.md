@@ -1,103 +1,447 @@
 # RiskFlow PayGuard
 
-## Payment Fraud Risk Scoring Platform
+## Explainable Payment Fraud-Risk Scoring Platform
 
-RiskFlow PayGuard is an end-to-end payment fraud-risk engineering project built around the IEEE-CIS Fraud Detection dataset.
+RiskFlow PayGuard is an end-to-end fraud-risk engineering project built around the IEEE-CIS Fraud Detection dataset.
 
-The project is being developed as a deployable fintech-style product rather than only a notebook-based machine-learning exercise. Its target workflow converts raw payment data into a fraud-risk score, an operational `ALLOW`, `REVIEW`, or `BLOCK` decision, an explanation, and monitoring outputs.
+It demonstrates how a machine-learning model can be turned into a controlled decision system rather than left as a notebook experiment:
 
-## Current Status
+```text
+synthetic transaction
+        |
+        v
+Streamlit Product Demo
+        |
+        | HTTP POST /predict
+        v
+FastAPI
+        |
+        v
+strict 63-feature validation
+        |
+        v
+frozen LightGBM baseline-v1
+        |
+        v
+frozen sigmoid calibration
+        |
+        v
+ALLOW / REVIEW / BLOCK policy
+        |
+        +--------> TreeSHAP explanations
+        |          + analyst reason codes
+        |
+        v
+prediction persistence
+        |
+        v
+SQLite or PostgreSQL
+        |
+        +--------> Monitoring
+        |
+        +--------> Read-only Threshold Simulator
+```
 
-The data, baseline-model, probability-calibration, drift-diagnostic, decision-policy, deterministic explanation, FastAPI inference, prediction persistence, monitoring, and read-only threshold-simulation foundations are complete.
-
-| Phase | Status | Deliverable |
-|---|---|---|
-| Phase 1 | Complete | Local data workflow, EDA, feature engineering, and chronological model datasets |
-| Phase 2 | Complete | Reproducible LightGBM baseline, fraud-focused evaluation, and versioned model bundle |
-| Phase 3 | Complete | Probability calibration, drift diagnostics, policy optimization, and versioned policy bundle |
-| Phase 4 | Complete | Native LightGBM TreeSHAP, deterministic contributions, reason codes, and artifact immutability checks |
-| Phase 5 | Complete | Strict FastAPI inference, frozen-policy loading, model metadata, single/batch prediction, parity, and immutability checks |
-| Phase 6 | Complete | Prediction persistence, outcome labeling, read-only monitoring, Streamlit monitoring, and threshold simulation |
-| Phase 7 | Complete | Docker image, PostgreSQL Compose stack, health checks, and deployment smoke validation |
-| Phase 8+ | Planned | Public cloud release, monitoring alerts, governance, and portfolio polish |
-
-### Implemented
-
-- IEEE-CIS local data workflow with raw data excluded from Git
-- Chronological training, validation, and test splits
-- Validated 63-feature model contract
-- 29 categorical and 34 numerical features
-- Training-only categorical vocabularies
-- Missing-category and unseen-category handling
-- LightGBM binary classifier with class weighting
-- Validation-based early stopping
-- PR-AUC, ROC-AUC, log loss, and Brier score
-- Reference-threshold confusion metrics
-- Fraud recall and precision at fixed review capacities
-- Fraudulent transaction-amount capture metrics
-- Versioned and atomically persisted joblib model bundle
-- Sigmoid probability calibration
-- Calibration-fit and policy-selection validation partitions
-- Score and categorical drift diagnostics
-- Explicit fraud-policy costs and operational constraints
-- Deterministic `ALLOW`, `REVIEW`, and `BLOCK` threshold optimization
-- Versioned calibrated policy bundle
-- Artifact overwrite protection and post-load validation
-- Raw-feature calibrated-policy inference
-- Native LightGBM TreeSHAP contribution extraction
-- Raw-margin and raw-score reconstruction validation
-- Deterministic top positive and negative contributions
-- Stable versioned analyst reason codes
-- Observed, missing, and unknown-category explanation states
-- Explanation-enabled calibrated-policy inference
-- Batch and individual-row explanation parity
-- Frozen model and policy artifact immutability checks
-- Reloaded-bundle inference tests
-- Automated pytest coverage
-- Fail-closed FastAPI lifespan loading of the frozen calibrated policy
-- Frozen policy SHA-256 verification before deserialization
-- Strict Pydantic v2 transaction and batch schemas
-- Complete 63-feature API request contract
-- `GET /health`
-- `GET /model-info`
-- `POST /predict`
-- `POST /batch-predict`
-- Direct API versus frozen inference parity
-- Single-versus-batch prediction parity
-- Ordered batch identifier and row preservation
-- Standard HTTP 422 validation behavior
-- API-level encoder and policy-artifact immutability checks
-- Deterministic repeated API responses
-- SQLAlchemy prediction-event persistence
-- Local SQLite prediction-event storage
-- Atomic single and batch prediction persistence
-- Repeated transaction-event history without overwriting earlier scores
-- Frozen policy provenance stored with every prediction event
-- Ground-truth outcome-label backfill
-- Conflict-safe and idempotent label updates
-- Read-only monitoring of persisted ALLOW, REVIEW, and BLOCK decisions
-- Label-coverage reporting without unsupported fraud claims
-- Streamlit Monitoring view
-- Temporary read-only threshold scenarios
-- Frozen-versus-candidate workload and decision-transition analysis
-- Label-gated fraud and development-economics comparison
-- Streamlit Threshold Simulator with no save, apply, or promote workflow
-
-### Not Yet Implemented
-
-- Automated monitoring alerts
-- Automated ground-truth ingestion
-- Database migrations and production PostgreSQL validation
-- Production cost-assumption validation
-- Cloud deployment
-
-The Phase 5 FastAPI inference contract remains frozen. Phase 6 adds local prediction persistence and a read-only Streamlit monitoring/simulation layer around that existing inference system.
+The project emphasizes reproducible inference, calibrated probabilities, policy immutability, explanation integrity, persistence, operational monitoring, containerized deployment, and honest separation between model outputs and confirmed fraud outcomes.
 
 ---
 
-## Phase 2 Baseline Results
+## Product Demo
 
-The frozen `baseline-v1` model was trained on the training split, used the validation split for early stopping, and was evaluated once against the untouched chronological test split.
+The default Streamlit view provides a guided demonstration of the real scoring path.
+
+A user can:
+
+1. select a deterministic synthetic payment scenario;
+2. inspect the complete strict API request;
+3. submit it through the live FastAPI `/predict` endpoint;
+4. view the calibrated fraud-risk probability and `ALLOW`, `REVIEW`, or `BLOCK` decision;
+5. inspect score-increasing and score-decreasing TreeSHAP signals;
+6. review analyst-facing reason codes;
+7. move to Monitoring and see the persisted prediction event.
+
+The dashboard does **not** load a second model or perform local inference as a fallback. **No local scoring fallback is used.** If FastAPI is unavailable, the Product Demo fails explicitly.
+
+The committed demo transactions are synthetic and have no ground-truth fraud labels. They are demonstration inputs, not examples of confirmed legitimate or fraudulent payments.
+
+---
+
+## Core Capabilities
+
+### Fraud-risk modeling
+
+- chronological train, validation, and test splits;
+- deterministic 63-feature contract;
+- 29 categorical and 34 numerical features;
+- LightGBM binary classifier;
+- training-only categorical vocabularies;
+- explicit missing and unseen-category handling;
+- class weighting and validation-based early stopping;
+- PR-AUC, ROC-AUC, log loss, Brier score, recall, precision, and amount-capture evaluation.
+
+### Calibration and decision policy
+
+- sigmoid probability calibration;
+- separate calibration-fit and policy-selection validation partitions;
+- deterministic `ALLOW`, `REVIEW`, and `BLOCK` thresholds;
+- explicit cost assumptions and operational constraints;
+- drift diagnostics;
+- frozen calibrated-policy artifact;
+- overwrite protection and integrity checks.
+
+### Explainability
+
+- native LightGBM TreeSHAP;
+- deterministic top positive and negative contributions;
+- raw-margin reconstruction validation;
+- versioned analyst reason codes;
+- observed, missing, and unknown-category states;
+- batch-versus-single explanation parity;
+- explicit non-causal interpretation warnings.
+
+### API
+
+- FastAPI and Pydantic v2;
+- fail-closed frozen-policy loading;
+- SHA-256 verification before artifact deserialization;
+- strict single and batch request schemas;
+- deterministic prediction responses;
+- single-versus-batch inference parity;
+- ordered batch preservation;
+- standard HTTP 422 validation behavior.
+
+Implemented endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Confirm application and frozen-policy startup |
+| `GET` | `/model-info` | Expose immutable model, policy, threshold, and feature metadata |
+| `POST` | `/predict` | Score, explain, and persist one transaction |
+| `POST` | `/batch-predict` | Score, explain, and atomically persist an ordered batch |
+
+### Persistence and monitoring
+
+- SQLAlchemy prediction-event persistence;
+- SQLite for native local execution;
+- PostgreSQL 16 for the validated Docker Compose stack;
+- append-only prediction history;
+- frozen provenance stored with each event;
+- atomic single and batch writes;
+- explicit outcome-label backfill;
+- idempotent and conflict-safe label updates;
+- decision distribution and intervention monitoring;
+- label-coverage reporting;
+- reason-code monitoring;
+- REVIEW/BLOCK operational queue.
+
+### Threshold simulation
+
+The Streamlit Threshold Simulator evaluates temporary candidate thresholds against persisted calibrated probabilities.
+
+It supports:
+
+- frozen-versus-candidate workload comparison;
+- decision-transition analysis;
+- operational constraint checks;
+- label-gated fraud metrics;
+- label-gated development-economics comparison.
+
+It intentionally provides **no save, apply, promote, or write-back workflow**. Candidate thresholds never modify the frozen policy or persisted production decisions.
+
+### Deployment foundation
+
+- hardened Python 3.11 Docker image;
+- one application image shared by FastAPI and Streamlit;
+- non-root container execution;
+- build-time frozen-artifact validation;
+- PostgreSQL 16 Docker Compose service;
+- health checks for PostgreSQL, FastAPI, and Streamlit;
+- persistent PostgreSQL named volume;
+- isolated end-to-end deployment smoke validation.
+
+This is a validated local/container deployment foundation, not a claim of public-cloud production readiness.
+
+---
+
+## Frozen Inference Contract
+
+The Phase 5 inference contract is intentionally frozen and remains unchanged by the monitoring, deployment, and portfolio layers.
+
+| Component | Frozen value |
+|---|---|
+| Baseline model | `baseline-v1` |
+| Policy | `calibrated-policy-v1` |
+| Calibration | `sigmoid` |
+| REVIEW threshold | `0.16255069862369795` |
+| BLOCK threshold | `0.8509223095305902` |
+| Explanation version | `shap-explanation-v1` |
+| Reason-code version | `reason-codes-v1` |
+| Policy artifact | `models/payguard_calibrated_policy.joblib` |
+| SHA-256 | `5d53f23719ae891ecc24585393585765aa7fc0900ab38f95e37f59c18fe6c90f` |
+
+The runtime verifies the artifact digest before deserialization and validates the embedded model, calibration method, thresholds, and version metadata.
+
+There is no silent fallback to another model or policy.
+
+The frozen artifact is a local runtime artifact and is intentionally excluded from Git.
+
+---
+
+## Quick Start
+
+### Option A — Docker Compose
+
+Prerequisites:
+
+- Docker with Compose support;
+- the frozen policy artifact available locally at:
+
+```text
+models/payguard_calibrated_policy.joblib
+```
+
+Build and start the complete stack:
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+```text
+Streamlit Product Demo: http://localhost:8501
+FastAPI documentation:  http://localhost:8000/docs
+FastAPI health:         http://localhost:8000/health
+```
+
+The Compose stack runs:
+
+```text
+PostgreSQL
+FastAPI
+Streamlit
+```
+
+FastAPI and Streamlit share the same PostgreSQL prediction store. The Product Demo reaches FastAPI through the internal Compose service network.
+
+Stop the stack with:
+
+```bash
+docker compose down
+```
+
+Remove the local PostgreSQL volume as well:
+
+```bash
+docker compose down --volumes
+```
+
+### Option B — Native Python
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+On macOS, LightGBM may require the OpenMP runtime:
+
+```bash
+brew install libomp
+```
+
+Start FastAPI:
+
+```bash
+python -m uvicorn api.main:app --reload
+```
+
+In a second terminal:
+
+```bash
+source .venv/bin/activate
+python -m streamlit run dashboard/app.py
+```
+
+Native execution defaults to:
+
+```text
+DATABASE_URL=sqlite:///./predictions.db
+PAYGUARD_API_URL=http://localhost:8000
+```
+
+Copy `.env.example` to `.env` when you want to override runtime configuration:
+
+```bash
+cp .env.example .env
+```
+
+The model version, calibration method, thresholds, explanation version, reason-code version, and artifact SHA are **not** configurable through `.env`.
+
+---
+
+## API Example
+
+The repository contains deterministic synthetic payloads that match the complete 63-feature API contract.
+
+With FastAPI running:
+
+```bash
+curl -s \
+  -X POST \
+  http://localhost:8000/predict \
+  -H 'Content-Type: application/json' \
+  --data @data/sample_payloads/predict_single.json \
+  | python -m json.tool
+```
+
+Batch example:
+
+```bash
+curl -s \
+  -X POST \
+  http://localhost:8000/batch-predict \
+  -H 'Content-Type: application/json' \
+  --data @data/sample_payloads/predict_batch.json \
+  | python -m json.tool
+```
+
+A prediction response includes:
+
+- transaction identifier;
+- raw model score;
+- calibrated probability;
+- frozen policy decision;
+- top positive TreeSHAP contributions;
+- top negative TreeSHAP contributions;
+- analyst reason codes;
+- explanation reconstruction diagnostics;
+- immutable model and policy provenance.
+
+Successful prediction requests are persisted automatically.
+
+---
+
+## Monitoring Workflow
+
+A simple demonstration sequence is:
+
+```text
+1. Open Product Demo
+2. Select a synthetic transaction
+3. Score transaction
+4. Inspect decision and explanation
+5. Open Monitoring
+6. Confirm the persisted event
+7. Open Threshold Simulator
+8. Compare temporary candidate thresholds
+```
+
+Monitoring only reports fraud-performance or economic metrics when appropriate labels are available.
+
+Unlabeled prediction events are not silently treated as legitimate transactions.
+
+---
+
+## Product Screenshots
+
+### Product Demo — scored REVIEW decision
+
+The primary portfolio screenshot shows the API-backed Product Demo returning a
+frozen `REVIEW` decision, calibrated probability, TreeSHAP signals, and analyst
+reason codes.
+
+![RiskFlow PayGuard Product Demo result](docs/assets/phase8_product_demo_result.png)
+
+### Monitoring — persisted operational view
+
+The Monitoring view shows that API predictions are persisted and exposed through
+an operational dashboard.
+
+![RiskFlow PayGuard Monitoring dashboard](docs/assets/phase8_monitoring.png)
+
+### Threshold Simulator — read-only policy analysis
+
+The Threshold Simulator compares temporary candidate thresholds against the
+frozen policy without saving, applying, or promoting them.
+
+![RiskFlow PayGuard Threshold Simulator](docs/assets/phase8_threshold_simulator.png)
+
+---
+
+## Architecture
+
+```text
+                         RiskFlow PayGuard
+                                |
+               +----------------+----------------+
+               |                                 |
+               v                                 v
+        Streamlit Dashboard                 FastAPI /docs
+               |
+     +---------+----------+
+     |                    |
+     v                    v
+Product Demo          Operations
+     |                    |
+     |             +------+------+
+     |             |             |
+     |             v             v
+     |        Monitoring    Threshold Simulator
+     |
+     | POST /predict
+     v
+   FastAPI
+     |
+     v
+Pydantic validation
+     |
+     v
+63-feature contract
+     |
+     v
+baseline-v1 LightGBM
+     |
+     v
+sigmoid calibration
+     |
+     v
+calibrated-policy-v1
+     |
+     +--------> TreeSHAP
+     |
+     +--------> reason codes
+     |
+     v
+prediction event
+     |
+     v
+SQLAlchemy
+     |
+     +------------+
+     |            |
+     v            v
+  SQLite      PostgreSQL
+ (native)      (Compose)
+```
+
+The Product Demo deliberately calls the API rather than importing the model directly. This keeps one inference path responsible for validation, scoring, explanation generation, policy assignment, and persistence.
+
+---
+
+## Model Results
+
+### Baseline model
+
+The frozen `baseline-v1` LightGBM model was trained on the chronological training split, used validation for early stopping, and was evaluated once against the untouched chronological test split.
 
 | Metric | Validation | Test |
 |---|---:|---:|
@@ -107,33 +451,24 @@ The frozen `baseline-v1` model was trained on the training split, used the valid
 | Brier score | 0.0290 | 0.0336 |
 | Fraud prevalence | 3.43% | 3.48% |
 
-At a review capacity of the top 1% of test transactions, the model achieved:
+At a review capacity equal to the top 1% of test transactions:
 
-- 24.10% fraud recall
-- 83.86% review precision
-- 14.16% fraudulent amount capture
+- fraud recall: `24.10%`;
+- review precision: `83.86%`;
+- fraudulent amount capture: `14.16%`.
 
-The test PR-AUC is approximately 14.2 times the underlying test fraud prevalence. The temporal decline from validation to test indicates that drift and stability require further investigation.
+The test PR-AUC is approximately 14.2 times test fraud prevalence.
 
-The baseline is accepted as a technical benchmark, not as a calibrated or production-ready fraud policy.
+The decline from validation to the later chronological test split is treated as a stability/drift signal rather than hidden through random resampling.
 
-See the complete results and implementation plan:
+See:
 
 - [`docs/phase2_baseline_results.md`](docs/phase2_baseline_results.md)
 - [`docs/phase2_baseline_model.md`](docs/phase2_baseline_model.md)
 
----
+### Calibrated policy
 
-
-## Phase 3 Calibration and Policy Results
-
-The frozen `calibrated-policy-v1` artifact embeds `baseline-v1`, a
-sigmoid calibrator, and deterministic fraud-policy thresholds.
-
-Selected thresholds:
-
-- `REVIEW`: probability at or above `0.16255069862369795`
-- `BLOCK`: probability at or above `0.8509223095305902`
+The frozen `calibrated-policy-v1` artifact embeds `baseline-v1`, the sigmoid calibrator, and deterministic decision thresholds.
 
 Final one-time chronological test results:
 
@@ -150,16 +485,11 @@ Final one-time chronological test results:
 | Fraud amount capture | 21.13% |
 | Modeled cost reduction versus all-allow | 19.45% |
 
-Calibration improved test log loss from `0.1300` to `0.1014` and Brier
-score from `0.0336` to `0.0238`, while monotonic sigmoid calibration
-preserved ranking performance.
+Calibration improved test log loss from `0.1300` to `0.1014` and Brier score from `0.0336` to `0.0238`.
 
-The frozen policy satisfied all configured operational constraints.
-No test transaction exceeded the frozen block threshold, so the
-test-period policy operated as an `ALLOW` or `REVIEW` policy.
+No transaction in the final chronological test split exceeded the frozen BLOCK threshold. The recorded test-period policy therefore operated as an `ALLOW`/`REVIEW` policy.
 
-Economic results depend on explicit development assumptions and are not
-measured production savings.
+The modeled economic result depends on explicit development assumptions and must not be interpreted as measured production savings.
 
 See:
 
@@ -168,21 +498,20 @@ See:
 
 ---
 
-## Phase 4 Explanation Results
+## Explanation Design
 
-The frozen `baseline-v1` LightGBM model now supports native TreeSHAP
-explanations integrated with `calibrated-policy-v1`.
+TreeSHAP explanations are generated from the frozen LightGBM model.
 
-TreeSHAP contributions reconstruct the raw model margin within an absolute
-tolerance of `1e-8`. Explanation-enabled inference preserves the existing raw
-score, calibrated probability, decision, and row order.
+The implementation:
 
-The explanation layer is read-only. Frozen model trees, categorical
-vocabularies, calibration parameters, policy thresholds, and artifact bytes
-remain unchanged.
+- reconstructs the raw LightGBM margin within strict numerical tolerance;
+- leaves the raw score, calibrated probability, decision, and row order unchanged;
+- ranks deterministic positive and negative feature contributions;
+- maps contributions to stable analyst-facing reason codes.
 
-Reason codes describe model signals and must not be interpreted as causal
-evidence of fraud.
+SHAP contributions explain the model's raw prediction margin.
+
+They do **not** establish why a real transaction was fraudulent, prove causality, or independently validate the calibrated probability.
 
 See:
 
@@ -191,11 +520,11 @@ See:
 
 ---
 
-## Dataset
+## Dataset and Feature Contract
 
 RiskFlow PayGuard uses the IEEE-CIS Fraud Detection dataset from Kaggle.
 
-Raw, processed, and model-binary files are intentionally excluded from Git.
+Raw and processed competition data are intentionally excluded from Git.
 
 Expected local structure:
 
@@ -206,22 +535,9 @@ data/
 └── sample_payloads/
 ```
 
-Processed labeled datasets:
+The committed `sample_payloads/` files are deterministic synthetic API/demo requests, not original competition rows.
 
-```text
-data/processed/train.parquet
-data/processed/validation.parquet
-data/processed/test.parquet
-```
-
-Supporting metadata:
-
-```text
-data/processed/feature_metadata.csv
-data/processed/dataset_manifest.json
-```
-
-Chronological split sizes:
+Chronological development split sizes:
 
 | Split | Rows |
 |---|---:|
@@ -229,50 +545,56 @@ Chronological split sizes:
 | Validation | 88,581 |
 | Test | 88,581 |
 
-See [`data/README.md`](data/README.md) for the local data setup instructions.
+The final inference contract contains:
+
+```text
+63 total features
+29 categorical features
+34 numerical features
+```
+
+See [`data/README.md`](data/README.md) for data preparation details.
 
 ---
 
-## Modeling Design
+## Testing and Validation
 
-The Phase 2 baseline uses:
+Run the full automated test suite:
 
-- `LGBMClassifier`
-- Binary classification objective
-- Learning rate of `0.03`
-- Maximum of `2,000` estimators
-- Validation-based early stopping
-- Positive-class weighting from the training distribution
-- Deterministic CPU configuration
-- Native LightGBM numerical missing-value handling
-- Explicitly identified categorical features
+```bash
+python -m pytest -q
+```
 
-The fitted model stopped at iteration `1,454`.
+Validate the Compose definition:
 
-Categorical preprocessing is learned from the training split only. Validation, test, and future inference data cannot expand the learned vocabularies.
+```bash
+docker compose config --quiet
+```
 
-The versioned model bundle contains:
+Run the isolated deployment smoke test:
 
-- Fitted LightGBM classifier
-- Categorical encoder
-- Ordered feature names
-- Categorical and numerical feature groups
-- Category vocabularies
-- Model configuration
-- Positive-class weight
-- Best iteration
-- Validation metrics
-- Final test metrics
-- Source dataset manifest
-- Model version and creation timestamp
+```bash
+python scripts/deployment_smoke.py
+```
 
-Generated model artifacts are written under `models/` and remain excluded from Git.
+The deployment smoke test validates:
+
+- image build;
+- frozen artifact loading;
+- PostgreSQL health;
+- FastAPI health;
+- Streamlit health;
+- frozen `/model-info` metadata;
+- prediction persistence;
+- typed transaction-ID label backfill;
+- direct PostgreSQL verification;
+- persistence across container recreation.
 
 ---
 
-## Stack
+## Technology Stack
 
-### Implemented
+### Application and analytics
 
 - Python
 - pandas
@@ -281,306 +603,123 @@ Generated model artifacts are written under `models/` and remain excluded from G
 - scikit-learn
 - LightGBM
 - joblib
-- pytest
+- SHAP / native LightGBM TreeSHAP
+
+### Service and validation
+
 - FastAPI
-- Pydantic v2
 - Uvicorn
-- SHAP / native LightGBM TreeSHAP explanations
-- SQLAlchemy prediction-event persistence
-- SQLite for local prediction logs
-- Streamlit monitoring and threshold simulation
+- Pydantic v2
+- httpx
 
-### Planned Next Product Layer
+### Persistence and UI
 
-- Database migration tooling before future schema changes
+- SQLAlchemy
+- SQLite
+- PostgreSQL 16
+- Streamlit
+
+### Delivery and quality
+
 - Docker
-- Cloud deployment
-- Monitoring alerts
-
----
-
-## Local Setup
-
-### 1. Create and activate a virtual environment
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-### 2. Install dependencies
-
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-LightGBM requires the OpenMP runtime on macOS. Install it through Homebrew when needed:
-
-```bash
-brew install libomp
-```
-
-### 3. Prepare the data
-
-Follow [`data/README.md`](data/README.md).
-
-Raw Kaggle files should be placed under:
-
-```text
-data/raw/
-```
-
-They must not be committed.
-
-### 4. Run the test suite
-
-```bash
-python -m pytest
-```
-
-### 5. Run the Phase 5 API locally
-
-Start the local FastAPI application with:
-
-    python -m uvicorn api.main:app --reload
-
-The application loads and verifies the frozen calibrated policy during
-lifespan startup. A missing, replaced, or incompatible policy artifact causes
-startup to fail rather than silently falling back to another model.
-
-Interactive OpenAPI documentation is available from the local FastAPI `/docs`
-route while the service is running.
-
-### 6. Run the Phase 6 dashboard locally
-
-In a second terminal, start Streamlit with:
-
-    python -m streamlit run dashboard/app.py
-
-The API and dashboard use the same configured prediction database. The default
-local database URL is `sqlite:///./predictions.db`.
-
-Successful `/predict` and `/batch-predict` requests populate the monitoring
-store. The Threshold Simulator uses temporary candidate thresholds only and
-does not modify the frozen production policy or persisted production decisions.
-
-### 7. Train a local development model
-
-Use `--skip-test-evaluation` during development to avoid repeatedly inspecting the frozen chronological test split:
-
-```bash
-python -m src.train \
-  --model-output models/payguard_baseline_local.joblib \
-  --model-version baseline-local-v1 \
-  --n-jobs 4 \
-  --skip-test-evaluation
-```
-
-The published `baseline-v1` test results are already recorded. Further implementation decisions should not be tuned against that test result.
-
-### 8. Load a saved bundle
-
-```python
-from src.model_bundle import load_model_bundle
-
-bundle = load_model_bundle(
-    "models/payguard_baseline_local.joblib"
-)
-
-print(bundle.model_version)
-print(bundle.best_iteration)
-print(bundle.feature_columns)
-```
-
-Compatible raw feature frames can be scored with:
-
-```python
-fraud_probabilities = (
-    bundle.predict_fraud_probabilities(features)
-)
-```
-
----
-
-## Target Architecture
-
-```text
-payment transaction
-        |
-        v
-RiskFlow PayGuard API
-        |
-        v
-feature validation and preprocessing
-        |
-        v
-LightGBM model bundle
-        |
-        v
-fraud-risk score
-        |
-        v
-decision engine
-   |       |       |
- ALLOW   REVIEW   BLOCK
-        |
-        v
-prediction logging
-        |
-        v
-monitoring and threshold dashboard
-```
-
-The baseline model bundle, calibrated policy bundle, deterministic explanation layer, Phase 5 API prediction integration, Phase 6 prediction persistence, monitoring, and read-only threshold simulation now exist. Deployment, automated alerts, production database operations, and production governance remain future work.
-
----
-
-## Implemented Phase 5 API Capabilities
-
-Phase 5 provides a strict and deterministic HTTP interface over the frozen
-`calibrated-policy-v1` inference pipeline.
-
-Implemented capabilities include:
-
-- complete Pydantic v2 transaction validation
-- frozen policy integrity verification during application startup
-- raw fraud-model scoring
-- sigmoid-calibrated fraud probabilities
-- frozen `ALLOW`, `REVIEW`, and `BLOCK` policy decisions
-- deterministic TreeSHAP contribution rankings
-- deterministic analyst reason codes
-- reconstruction diagnostics
-- transaction identifier preservation
-- ordered batch prediction
-- single-versus-batch parity
-- artifact and encoder immutability checks
-
-Implemented endpoints:
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/health` | Confirm successful API startup and policy loading |
-| `GET` | `/model-info` | Return frozen policy and feature-contract metadata |
-| `POST` | `/predict` | Score and explain one transaction |
-| `POST` | `/batch-predict` | Score and explain an ordered transaction batch |
-
-Prediction logging was intentionally not part of the Phase 5 application surface. Phase 6 now persists successful prediction events behind the existing prediction endpoints and provides monitoring and threshold simulation through the local Streamlit dashboard. `/recent-predictions` and `/threshold-simulation` HTTP endpoints were intentionally not added.
-
-See [`docs/phase5_api_integration.md`](docs/phase5_api_integration.md) for the
-complete API contract, implementation record, parity requirements, and final
-verification evidence.
-
----
-
-## Implemented Phase 6 Monitoring and Threshold Simulation
-
-Phase 6 adds a local operational layer around the frozen Phase 5 inference
-system without changing how transactions are scored, calibrated, explained,
-or assigned under the production policy.
-
-Implemented capabilities include:
-
-- append-only prediction-event persistence
-- atomic single and batch persistence
-- outcome-label backfill
-- read-only monitoring of persisted decisions
-- label-coverage reporting
-- temporary candidate threshold scenarios
-- frozen-versus-candidate workload comparison
-- decision-transition analysis
-- operational constraint evaluation
-- label-gated fraud and development-economics comparison
-- Streamlit Monitoring and Threshold Simulator views
-- no save, apply, or promote threshold workflow
-
-The simulator reuses the existing policy decision and evaluation functions.
-It does not search for optimized thresholds or modify the frozen policy
-artifact.
-
-See [`docs/phase6_monitoring_dashboard.md`](docs/phase6_monitoring_dashboard.md)
-for the complete Phase 6 persistence, monitoring, simulation, and verification
-record.
-
----
-
-## Implemented Phase 7 Deployment Foundation
-
-Phase 7 packages the existing FastAPI and Streamlit application for
-containerized operation without changing the frozen inference contract.
-
-The deployment foundation includes:
-
-- one hardened Python 3.11 application image shared by FastAPI and Streamlit
-- build-time frozen-policy integrity validation
-- non-root container execution
-- PostgreSQL 16 persistence through Docker Compose
-- shared PostgreSQL access for API persistence and dashboard reads
-- health checks for PostgreSQL, FastAPI, and Streamlit
-- named-volume persistence across container recreation
-- PostgreSQL-safe typed transaction-ID label lookup
-- isolated end-to-end deployment smoke validation
-
-Native local execution continues to default to SQLite. PostgreSQL is the
-validated containerized deployment database.
-
-Phase 7 does not claim a public cloud production release.
-
-See [`docs/phase7_deployment.md`](docs/phase7_deployment.md).
+- Docker Compose
+- pytest
 
 ---
 
 ## Project Structure
 
 ```text
-api/          FastAPI application, frozen-policy loading, prediction services, persistence, and outcome labeling
-dashboard/    Read-only monitoring queries, threshold simulation, and Streamlit views
-data/         Local raw, processed, and sample-payload directories
+api/          FastAPI service, request schemas, frozen-policy loading,
+              scoring integration, persistence, and outcome labeling
+
+dashboard/    Product Demo, monitoring queries/views, and read-only
+              threshold simulation
+
+data/         Local raw/processed data plus committed synthetic demo payloads
+
 db/           Prediction-log database components
-docs/         Architecture, implementation plans, and model results
-models/       Local serialized model artifacts
-notebooks/    EDA and analytical notebooks
-src/          Data processing, preprocessing, evaluation, training, and model bundles
+
+docs/         Phase architecture, implementation records, and model results
+
+models/       Local serialized model/policy artifacts
+
+notebooks/    Exploratory and analytical notebooks
+
 scripts/      Deployment and operational validation utilities
-tests/        Automated pytest suite
+
+src/          Feature engineering, preprocessing, modeling, calibration,
+              policy evaluation, explainability, and bundle utilities
+
+tests/        Automated unit, integration, API, dashboard, persistence,
+              immutability, and deployment-support tests
 ```
 
 ---
 
-## Roadmap
+## Development Phases
 
-- [x] Phase 1 — Data setup, EDA, feature engineering, and chronological datasets
-- [x] Phase 2 — LightGBM baseline, evaluation, and versioned model bundle
-- [x] Phase 3 — Probability calibration, drift analysis, and decision thresholds
-- [x] Phase 4 — SHAP explanations and reason codes
-- [x] Phase 5 — RiskFlow PayGuard API prediction integration
-- [x] Phase 6 — Monitoring and threshold-simulation dashboard
-- [x] Phase 7 — Docker and PostgreSQL deployment foundation
-- [ ] Phase 8 — Portfolio polish and product demonstration
+| Phase | Status | Deliverable |
+|---|---|---|
+| Phase 1 | Complete | Data setup, EDA, feature engineering, and chronological datasets |
+| Phase 2 | Complete | LightGBM baseline, evaluation, and versioned model bundle |
+| Phase 3 | Complete | Probability calibration, drift diagnostics, and decision policy |
+| Phase 4 | Complete | TreeSHAP explanations and versioned reason codes |
+| Phase 5 | Complete | Strict FastAPI inference over the frozen policy |
+| Phase 6 | Complete | Persistence, monitoring, outcome labeling, and threshold simulation |
+| Phase 7 | Complete | Docker/PostgreSQL deployment foundation and deployment smoke |
+| Phase 8 | Complete | Guided Product Demo, portfolio documentation, and presentation assets |
+
+Detailed implementation records:
+
+- [`docs/phase5_api_integration.md`](docs/phase5_api_integration.md)
+- [`docs/phase6_monitoring_dashboard.md`](docs/phase6_monitoring_dashboard.md)
+- [`docs/phase7_deployment.md`](docs/phase7_deployment.md)
+- [`docs/phase8_portfolio_demo.md`](docs/phase8_portfolio_demo.md)
+- [`docs/README.md`](docs/README.md)
 
 ---
 
 ## Current Limitations
 
-The calibrated policy should not be treated as a deployed payment
-authorization system.
+RiskFlow PayGuard is a portfolio/development system and should not be treated as a deployed payment authorization platform.
 
-Principal limitations include:
+Current limitations include:
 
-- Development cost assumptions are not validated against production data
-- No final-test transaction reached the frozen block threshold
-- SHAP reason codes explain model signals but are not causal evidence
-- SHAP values decompose the raw margin rather than the calibrated probability
-- No dedicated high-value fraud objective
-- No public cloud release, authentication, rate limiting, or production traffic validation
-- Local prediction persistence is implemented, but there is no automated monitoring-alert engine
-- Ground-truth labels require explicit backfill; there is no automated outcome-ingestion pipeline
-- SQLite remains the native local default and PostgreSQL is validated through Docker Compose; no schema-migration framework is configured yet
-- No automated retraining workflow
-- No formal policy approval or model-risk governance process
+- development cost assumptions are not validated against real production economics;
+- no final-test transaction reached the frozen BLOCK threshold;
+- SHAP contributions and reason codes describe model behavior but are not causal evidence;
+- SHAP values decompose the raw model margin rather than the calibrated probability;
+- no dedicated high-value-fraud optimization objective;
+- no public-cloud release;
+- no authentication or rate limiting;
+- no production traffic or latency validation;
+- no automated monitoring-alert engine;
+- no automated ground-truth outcome-ingestion pipeline;
+- no schema-migration framework is configured yet;
+- no automated retraining workflow;
+- no formal policy-approval or model-risk-governance process.
 
-The recorded `baseline-v1` model and `calibrated-policy-v1` policy should
-remain frozen benchmarks for future improvements.
+PostgreSQL has been validated through the Docker Compose deployment smoke test. Future schema changes should introduce migration tooling before altering the persisted schema.
+
+The frozen `baseline-v1` and `calibrated-policy-v1` artifacts are benchmarks and must remain unchanged unless a future version is deliberately introduced as a separate artifact and policy.
+
+---
+
+## Future Product Work
+
+Potential work beyond the current portfolio demonstration includes:
+
+- public-cloud deployment;
+- authentication and rate limiting;
+- monitoring alerts;
+- automated outcome ingestion;
+- database migration tooling;
+- stronger operational observability;
+- policy approval/governance workflows;
+- separately versioned future models rather than mutation of the frozen benchmark.
+
+These are intentionally outside the current Phase 8 implementation scope.
 
 ---
 

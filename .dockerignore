@@ -8,6 +8,10 @@
 !dashboard/
 !dashboard/**
 
+!data/
+!data/sample_payloads/
+!data/sample_payloads/*.json
+
 !src/
 !src/**
 
