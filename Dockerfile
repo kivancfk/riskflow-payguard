@@ -20,6 +20,7 @@ RUN useradd --create-home --uid 10001 appuser
 
 COPY --chown=appuser:appuser api ./api
 COPY --chown=appuser:appuser dashboard ./dashboard
+COPY --chown=appuser:appuser data/sample_payloads ./data/sample_payloads
 COPY --chown=appuser:appuser src ./src
 COPY --chown=appuser:appuser models/payguard_calibrated_policy.joblib ./models/payguard_calibrated_policy.joblib
 

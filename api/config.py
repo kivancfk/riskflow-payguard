@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     # explanations, or any other frozen inference behavior.
     database_url: str = "sqlite:///./predictions.db"
 
+    # Phase 8 dashboard transport configuration controls only where the
+    # Product Demo sends HTTP requests. It does not alter model loading,
+    # scoring, calibration, thresholds, explanations, or policy semantics.
+    payguard_api_url: str = "http://localhost:8000"
+
     @property
     def model_path(self) -> Path:
         """Compatibility alias for the legacy API startup scaffold."""

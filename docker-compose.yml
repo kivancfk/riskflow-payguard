@@ -50,8 +50,11 @@ services:
     environment:
       DATABASE_URL: >-
         postgresql+psycopg2://${POSTGRES_USER:-riskflow}:${POSTGRES_PASSWORD:-riskflow-local}@postgres:5432/${POSTGRES_DB:-riskflow}
+      PAYGUARD_API_URL: http://api:8000
     depends_on:
       postgres:
+        condition: service_healthy
+      api:
         condition: service_healthy
     ports:
       - "8501:8501"
