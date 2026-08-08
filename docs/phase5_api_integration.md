@@ -1,9 +1,10 @@
 # Phase 5 — FastAPI Integration
 
-> **Status: Planned**
+> **Status: Complete — 2026-08-08**
 >
-> Phase 5 starts from the completed Phase 4 merge commit
-> `789210f`.
+> Phase 5 started from the completed Phase 4 merge commit
+> `789210f` and was completed on branch
+> `phase-5-api-integration`.
 >
 > The frozen `baseline-v1` LightGBM model,
 > `calibrated-policy-v1` decision policy, explanation contract, and
@@ -575,9 +576,9 @@ cloud deployment
 Existing repository files related to later concerns must not be expanded as
 part of this phase.
 
-Planned commit sequence
+Implementation sequence
 
-Phase 5 will be implemented as isolated commits.
+Phase 5 was implemented as isolated commits.
 
 Commit 1 — planning and API contract
 docs: define phase 5 API contract
@@ -678,7 +679,200 @@ docs: complete phase 5 API integration
 Record final endpoint behavior, test results, artifact integrity, limitations,
 and handoff state for the next phase.
 
-Completion criteria
+
+## Completion record
+
+Phase 5 is complete.
+
+The FastAPI application now exposes exactly four Phase 5 business-facing
+endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Confirm successful startup and frozen-policy loading |
+| `GET` | `/model-info` | Expose frozen policy and feature-contract metadata |
+| `POST` | `/predict` | Score and explain one validated transaction |
+| `POST` | `/batch-predict` | Score and explain an ordered transaction batch |
+
+The application startup path is fail-closed. FastAPI lifespan startup resolves
+the configured policy path, calculates and validates the frozen SHA-256 digest
+before deserialization, loads the calibrated policy once per application
+process, validates the frozen model and policy metadata, and validates the API
+feature contract before accepting requests.
+
+The active application path does not use the legacy independent decision
+engine, prediction database logging, threshold-simulation endpoint, or
+recent-predictions endpoint.
+
+### Frozen artifact verification
+
+The completed API uses the following frozen contract:
+
+| Field | Frozen value |
+|---|---|
+| Baseline model version | `baseline-v1` |
+| Policy version | `calibrated-policy-v1` |
+| Calibration method | `sigmoid` |
+| Review threshold | `0.16255069862369795` |
+| Block threshold | `0.8509223095305902` |
+| Explanation version | `shap-explanation-v1` |
+| Reason-code version | `reason-codes-v1` |
+| Policy artifact | `models/payguard_calibrated_policy.joblib` |
+| Policy SHA-256 | `5d53f23719ae891ecc24585393585765aa7fc0900ab38f95e37f59c18fe6c90f` |
+
+The artifact digest was verified repeatedly before and after API startup,
+single prediction, batch prediction, parity testing, hardening testing, and the
+final repository regression run.
+
+No Phase 5 application request or test changed the persisted artifact bytes.
+
+### Request contract implemented
+
+The API exposes the complete frozen 63-feature model contract:
+
+- 63 total model features
+- 29 categorical features
+- 34 numerical features
+- every model feature key required in HTTP requests
+- explicit `null` values distinguished from absent fields
+- extra fields forbidden
+- malformed transaction identifiers rejected
+- booleans rejected as numerical inputs
+- non-finite numerical values rejected
+- unseen categorical values delegated to the frozen encoder
+- missing categorical values delegated to the frozen encoder
+- frozen categorical vocabularies never expanded during inference
+
+Model-facing DataFrame columns are ordered from
+`bundle.baseline_bundle.feature_columns`, leaving the frozen model bundle as
+the authoritative feature-order source.
+
+### Prediction contract implemented
+
+Both prediction endpoints reuse `predict_policy_with_explanations(...)` as the
+sole model, calibrated-policy, decision, and explanation integration boundary.
+
+The API does not independently calculate:
+
+- raw model scores
+- calibrated probabilities
+- policy decisions
+- SHAP contributions
+- reconstruction diagnostics
+- analyst reason codes
+
+Single and batch responses expose:
+
+- transaction identifier
+- model version
+- policy version
+- explanation version
+- reason-code version
+- raw model score
+- calibrated probability
+- `ALLOW`, `REVIEW`, or `BLOCK` decision
+- ordered positive TreeSHAP contributions
+- ordered negative TreeSHAP contributions
+- ordered reason codes
+- deterministic analyst reason messages
+- raw-margin and raw-score reconstruction metadata
+
+Prediction responses intentionally contain no request-time scoring timestamp,
+so repeated identical requests produce deterministic model-facing JSON.
+
+### Batch behavior implemented
+
+`POST /batch-predict`:
+
+- requires at least one transaction
+- rejects duplicate transaction identifiers
+- performs one aligned batch inference call
+- preserves request row order
+- preserves string and integer identifier types
+- returns exactly one output row for each input row
+- matches equivalent `/predict` results at the row level
+
+### Validation and HTTP behavior
+
+Malformed request payloads are rejected through FastAPI/Pydantic validation
+with HTTP `422` before the trusted inference boundary runs.
+
+This includes incomplete feature sets, extra fields, invalid identifiers,
+incorrect field types, invalid numerical values, empty batches, and duplicate
+batch identifiers.
+
+Explicit missing values remain valid when permitted by the frozen feature
+contract.
+
+Unseen categorical values are not rejected solely because they were absent
+during training; the existing frozen encoder maps them to its unknown-category
+representation.
+
+### Determinism and parity verification
+
+Phase 5 tests verify:
+
+- API versus direct `predict_policy_with_explanations(...)` parity
+- single versus batch prediction parity
+- transaction identifier preservation
+- batch row-order preservation
+- repeated-request determinism
+- deterministic contribution ordering
+- deterministic reason-code ordering
+- reconstruction invariants
+- encoder-vocabulary immutability
+- persisted policy-artifact immutability
+- exactly one Phase 4 inference-boundary call per prediction request
+- malformed requests do not reach model inference
+
+### Final regression evidence
+
+The final Phase 5 repository regression run completed successfully:
+
+`383 passed in 32.34s`
+
+The final frozen policy SHA-256 remained:
+
+`5d53f23719ae891ecc24585393585765aa7fc0900ab38f95e37f59c18fe6c90f`
+
+The final pre-documentation implementation head was:
+
+`49dca80 test: harden API parity and artifact immutability`
+
+`git diff --check` passed and the working tree was clean before this
+documentation update.
+
+### Phase 5 implementation commits
+
+Phase 5 was implemented through the following sequence:
+
+- `9ea3a7d` — `docs: define phase 5 API contract`
+- `708a0e1` — `feat: load and validate frozen API policy`
+- `e9323b8` — `feat: define strict API schemas and feature frames`
+- `51c0442` — `feat: expose API health and model information`
+- `bd915bd` — `feat: integrate single transaction prediction`
+- `947ad63` — `feat: integrate ordered batch prediction`
+- `bafa629` — `test: fix API prediction test whitespace`
+- `49dca80` — `test: harden API parity and artifact immutability`
+
+The small `bafa629` follow-up removed one extra EOF blank line detected by
+`git diff --check`. It made no functional change.
+
+### Handoff
+
+Phase 5 leaves a deterministic local FastAPI inference surface over the frozen
+Phase 2–4 model, calibrated policy, and explanation assets.
+
+Later phases may add prediction persistence, monitoring, dashboarding,
+threshold simulation, Docker packaging, authentication, deployment, and
+production operational controls.
+
+Those later concerns must continue to treat `baseline-v1`,
+`calibrated-policy-v1`, the frozen thresholds, explanation mappings, and the
+persisted artifact bytes as immutable benchmarks unless a future explicitly
+versioned model or policy replaces them.
+
+## Completion criteria
 
 Phase 5 is complete only when:
 
