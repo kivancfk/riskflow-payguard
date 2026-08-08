@@ -2,14 +2,23 @@
 
 ## Status
 
-Phase 8 is in progress.
+Phase 8 is complete.
 
-The functional Product Demo, deterministic synthetic API payloads, and
-portfolio-focused root README are complete.
+The completed phase includes:
+
+- deterministic synthetic API payloads;
+- an API-backed Streamlit Product Demo;
+- portfolio-focused root documentation;
+- a guided demonstration and presentation record;
+- real screenshots captured from the running application;
+- final regression and deployment verification.
 
 This document records the Phase 8 demonstration workflow, presentation strategy,
-frozen-contract guarantees, and the boundary between the implemented local
-product and future production infrastructure.
+frozen-contract guarantees, verification evidence, and the boundary between the
+implemented local product and future production infrastructure.
+
+A recorded Loom or portfolio video remains optional and is not required for
+Phase 8 completion.
 
 Phase 8 does not retrain, recalibrate, retune, overwrite, or promote any model
 or policy artifact.
@@ -408,26 +417,25 @@ Finish by noting that:
 - authentication, rate limiting, alerting, automated ground-truth ingestion,
   migration tooling, and model governance remain future concerns.
 
-## Screenshot Capture Plan
+## Screenshot Capture Record
 
-Screenshots should be captured from the running product after the UI is stable.
+The portfolio screenshots were captured from the running product after the UI
+was stabilized.
 
-No placeholder or generated screenshots should be used as evidence of the
+No placeholder or generated screenshots are used as evidence of the
 application.
 
-Recommended eventual asset directory:
+Final asset directory:
 
 ~~~text
 docs/assets/
 ~~~
 
-Recommended captures:
+The captured set is:
 
 ### `phase8_product_demo_input.png`
 
-Capture the Product Demo before scoring.
-
-Include:
+Captured before scoring and shows:
 
 - sidebar navigation;
 - selected synthetic scenario;
@@ -443,54 +451,47 @@ an API or notebook.
 
 ### `phase8_product_demo_result.png`
 
-Capture the higher-value scenario after scoring.
+Captured after scoring the higher-value synthetic scenario and shows:
 
-Include:
-
-- REVIEW decision;
+- the frozen `REVIEW` decision;
 - calibrated probability;
 - frozen thresholds;
-- visible explanation tables.
+- positive and negative TreeSHAP signals;
+- analyst reason codes.
 
 Purpose:
 
-This should be the primary portfolio screenshot.
-
-### `phase8_reason_codes.png`
-
-Capture:
-
-- analyst reason codes;
-- enough explanation context to make the relationship clear.
-
-Purpose:
-
-Show explainability as an operational analyst feature.
+Serve as the primary portfolio screenshot and show scoring plus explainability
+in one product view.
 
 ### `phase8_monitoring.png`
 
-After scoring several demo transactions, capture:
+Captured after three deterministic demo transactions were persisted and shows:
 
+- frozen policy provenance;
 - operational overview;
-- decision distribution;
-- calibrated-score monitoring;
-- recent REVIEW/BLOCK queue if visible.
+- actual decision distribution;
+- unlabeled outcome coverage.
 
 Purpose:
 
-Show that inference results flow into an operational monitoring layer.
+Show that inference results flow into a persisted operational monitoring layer.
 
 ### `phase8_threshold_simulator.png`
 
-Capture a temporary candidate scenario with a visible difference from the frozen
-workload.
+Captured with temporary candidate thresholds that visibly change the simulated
+workload and decisions.
 
-Include the simulation warning if possible.
+The simulation-only warning remains visible.
 
 Purpose:
 
 Demonstrate safe decision-policy analysis without presenting the simulator as a
 policy-editing screen.
+
+A separate `phase8_reason_codes.png` capture was intentionally omitted because
+the primary Product Demo result already presents the analyst reason codes and
+their explanation context clearly.
 
 ## Screenshot Quality Rules
 
@@ -633,16 +634,18 @@ For an ML Engineering audience, emphasize:
 
 ## Implemented Phase 8 Commits
 
-The Phase 8 branch currently contains:
+The Phase 8 implementation was built through isolated commits:
 
 ~~~text
 9f822b4  feat(demo): add deterministic API sample payloads
 384767d  feat(demo): add API-backed product demonstration
 68741b7  docs: reframe README for product demonstration
+267da47  docs: add Phase 8 demo and presentation guide
+d4bd74d  docs: add Phase 8 product screenshots
 ~~~
 
-This document and the documentation index form the next isolated Phase 8
-documentation commit.
+The final documentation-only completion commit marks the phase complete after
+the full regression and deployment verification gates pass.
 
 ## Phase 8 Completion Boundary
 
@@ -703,35 +706,59 @@ It also does not solve:
 
 These remain explicit future product concerns rather than hidden omissions.
 
-## Current Verification Baseline
+## Final Verification Baseline
 
-After the API-backed Product Demo implementation and README rewrite, the
-automated test baseline is:
+Before marking Phase 8 complete, the finished branch passed:
 
 ~~~text
+docker compose config --quiet
+PASS
+
+python -m pytest -q
 454 passed
+
+python scripts/deployment_smoke.py
+deployment smoke: PASS
 ~~~
 
-The frozen policy digest remains:
+The deployment smoke verified:
+
+- PostgreSQL health;
+- FastAPI health;
+- Streamlit health;
+- frozen `/model-info` metadata;
+- PostgreSQL prediction persistence;
+- typed outcome-label backfill;
+- direct PostgreSQL verification;
+- persistence across container recreation.
+
+The frozen policy digest remained:
 
 ~~~text
 5d53f23719ae891ecc24585393585765aa7fc0900ab38f95e37f59c18fe6c90f
 ~~~
 
-Any later Phase 8 asset or documentation commit must preserve that contract.
+Phase 8 therefore completes without retraining, recalibration, threshold
+changes, artifact overwrite, or inference-semantic changes.
 
-## Phase 8 Documentation Completion Criteria
+## Phase 8 Completion Criteria
 
-This documentation step is complete when:
+Phase 8 is complete because:
 
-- the Phase 8 demo workflow is documented;
-- the Product Demo is explicitly API-backed;
-- no local scoring fallback is implied;
-- synthetic examples are clearly identified as unlabeled;
-- Monitoring is described as persisted-decision monitoring;
-- Threshold Simulator is documented as read-only;
-- screenshot requirements are defined without fabricating assets;
-- a concise portfolio-video walkthrough is defined;
+- the demonstration workflow is documented;
+- the Product Demo uses the real FastAPI inference path;
+- no local scoring fallback exists;
+- deterministic synthetic examples are clearly identified as unlabeled;
+- prediction events persist into Monitoring;
+- the Threshold Simulator remains read-only;
+- real application screenshots are committed as portfolio evidence;
+- the primary Product Demo screenshot includes analyst reason codes;
+- a concise optional portfolio-video walkthrough is defined;
 - the public-cloud boundary remains explicit;
+- the complete automated suite passes;
+- the deployment smoke passes;
 - the frozen inference contract remains unchanged;
 - the documentation index links to this Phase 8 record.
+
+Any future product work should be introduced as a separately scoped phase rather
+than silently extending or mutating the completed Phase 8 contract.

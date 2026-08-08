@@ -15,7 +15,7 @@ stays scannable.
 - [`phase5_api_integration.md`](phase5_api_integration.md) — strict FastAPI inference contract and parity verification
 - [`phase6_monitoring_dashboard.md`](phase6_monitoring_dashboard.md) — prediction persistence, outcome labels, monitoring, and read-only threshold simulation
 - [`phase7_deployment.md`](phase7_deployment.md) — hardened container image, PostgreSQL Compose deployment, persistence portability, and smoke validation
-- [`phase8_portfolio_demo.md`](phase8_portfolio_demo.md) — API-backed Product Demo, portfolio walkthrough, screenshot plan, video plan, and product boundaries
+- [`phase8_portfolio_demo.md`](phase8_portfolio_demo.md) — completed API-backed Product Demo, captured portfolio screenshots, optional video plan, and product boundaries
 
 ## Current Portfolio Surface
 
@@ -43,8 +43,8 @@ Monitoring
 read-only Threshold Simulator
 ~~~
 
-The detailed presentation workflow and future screenshot/video capture plan are
-documented in
+The detailed presentation workflow, captured screenshot set, and optional
+portfolio-video plan are documented in
 [`phase8_portfolio_demo.md`](phase8_portfolio_demo.md).
 
 ## Future Documentation

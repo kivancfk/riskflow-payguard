@@ -668,13 +668,14 @@ tests/        Automated unit, integration, API, dashboard, persistence,
 | Phase 5 | Complete | Strict FastAPI inference over the frozen policy |
 | Phase 6 | Complete | Persistence, monitoring, outcome labeling, and threshold simulation |
 | Phase 7 | Complete | Docker/PostgreSQL deployment foundation and deployment smoke |
-| Phase 8 | In progress | Guided Product Demo, portfolio documentation, and presentation assets |
+| Phase 8 | Complete | Guided Product Demo, portfolio documentation, and presentation assets |
 
 Detailed implementation records:
 
 - [`docs/phase5_api_integration.md`](docs/phase5_api_integration.md)
 - [`docs/phase6_monitoring_dashboard.md`](docs/phase6_monitoring_dashboard.md)
 - [`docs/phase7_deployment.md`](docs/phase7_deployment.md)
+- [`docs/phase8_portfolio_demo.md`](docs/phase8_portfolio_demo.md)
 - [`docs/README.md`](docs/README.md)
 
 ---
