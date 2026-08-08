@@ -8,7 +8,7 @@ The project is being developed as a deployable fintech-style product rather than
 
 ## Current Status
 
-The data, baseline-model, probability-calibration, drift-diagnostic, decision-policy, and deterministic explanation foundations are complete.
+The data, baseline-model, probability-calibration, drift-diagnostic, decision-policy, deterministic explanation, and FastAPI inference foundations are complete.
 
 | Phase | Status | Deliverable |
 |---|---|---|
@@ -16,7 +16,8 @@ The data, baseline-model, probability-calibration, drift-diagnostic, decision-po
 | Phase 2 | Complete | Reproducible LightGBM baseline, fraud-focused evaluation, and versioned model bundle |
 | Phase 3 | Complete | Probability calibration, drift diagnostics, policy optimization, and versioned policy bundle |
 | Phase 4 | Complete | Native LightGBM TreeSHAP, deterministic contributions, reason codes, and artifact immutability checks |
-| Product integration | Planned | API prediction, dashboard, monitoring, and deployment |
+| Phase 5 | Complete | Strict FastAPI inference, frozen-policy loading, model metadata, single/batch prediction, parity, and immutability checks |
+| Phase 6+ | Planned | Prediction monitoring, dashboarding, threshold simulation, deployment, and portfolio polish |
 
 ### Implemented
 
@@ -51,18 +52,30 @@ The data, baseline-model, probability-calibration, drift-diagnostic, decision-po
 - Frozen model and policy artifact immutability checks
 - Reloaded-bundle inference tests
 - Automated pytest coverage
+- Fail-closed FastAPI lifespan loading of the frozen calibrated policy
+- Frozen policy SHA-256 verification before deserialization
+- Strict Pydantic v2 transaction and batch schemas
+- Complete 63-feature API request contract
+- `GET /health`
+- `GET /model-info`
+- `POST /predict`
+- `POST /batch-predict`
+- Direct API versus frozen inference parity
+- Single-versus-batch prediction parity
+- Ordered batch identifier and row preservation
+- Standard HTTP 422 validation behavior
+- API-level encoder and policy-artifact immutability checks
+- Deterministic repeated API responses
 
 ### Not Yet Implemented
 
-- Production `/predict` explanation integration
-- Batch prediction integration
 - Prediction logging and monitoring alerts
 - Streamlit monitoring dashboard
 - Threshold-simulation workflow
 - Production cost-assumption validation
 - Cloud deployment
 
-The existing API and dashboard directories are scaffolds for later phases.
+The FastAPI application is implemented for Phase 5. The dashboard directory remains a scaffold for later phases.
 
 ---
 
@@ -253,12 +266,13 @@ Generated model artifacts are written under `models/` and remain excluded from G
 - LightGBM
 - joblib
 - pytest
-
-### Planned Product Layer
-
 - FastAPI
-- Pydantic
-- SHAP
+- Pydantic v2
+- Uvicorn
+- SHAP / native LightGBM TreeSHAP explanations
+
+### Planned Next Product Layer
+
 - Streamlit
 - SQLite for local prediction logs
 - PostgreSQL for deployment
@@ -306,7 +320,20 @@ They must not be committed.
 python -m pytest
 ```
 
-### 5. Train a local development model
+### 5. Run the Phase 5 API locally
+
+Start the local FastAPI application with:
+
+    python -m uvicorn api.main:app --reload
+
+The application loads and verifies the frozen calibrated policy during
+lifespan startup. A missing, replaced, or incompatible policy artifact causes
+startup to fail rather than silently falling back to another model.
+
+Interactive OpenAPI documentation is available from the local FastAPI `/docs`
+route while the service is running.
+
+### 6. Train a local development model
 
 Use `--skip-test-evaluation` during development to avoid repeatedly inspecting the frozen chronological test split:
 
@@ -320,7 +347,7 @@ python -m src.train \
 
 The published `baseline-v1` test results are already recorded. Further implementation decisions should not be tuned against that test result.
 
-### 6. Load a saved bundle
+### 7. Load a saved bundle
 
 ```python
 from src.model_bundle import load_model_bundle
@@ -373,39 +400,52 @@ prediction logging
 monitoring and threshold dashboard
 ```
 
-The baseline model bundle, calibrated policy bundle, and decision-engine foundations exist. API prediction integration, explanation, monitoring, and deployment remain future work.
+The baseline model bundle, calibrated policy bundle, deterministic explanation layer, and Phase 5 API prediction integration now exist. Prediction logging, monitoring, threshold simulation, and deployment remain future work.
 
 ---
 
-## Planned API Capabilities
+## Implemented Phase 5 API Capabilities
 
-- Validate transaction payloads
-- Load the versioned model bundle
-- Produce fraud-risk scores
-- Map scores to operational decisions
-- Return explanation reason codes
-- Log predictions and decisions
-- Expose model metadata and health information
+Phase 5 provides a strict and deterministic HTTP interface over the frozen
+`calibrated-policy-v1` inference pipeline.
 
-Planned endpoints include:
+Implemented capabilities include:
+
+- complete Pydantic v2 transaction validation
+- frozen policy integrity verification during application startup
+- raw fraud-model scoring
+- sigmoid-calibrated fraud probabilities
+- frozen `ALLOW`, `REVIEW`, and `BLOCK` policy decisions
+- deterministic TreeSHAP contribution rankings
+- deterministic analyst reason codes
+- reconstruction diagnostics
+- transaction identifier preservation
+- ordered batch prediction
+- single-versus-batch parity
+- artifact and encoder immutability checks
+
+Implemented endpoints:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/health` | Service health |
-| `GET` | `/model-info` | Model version and metadata |
-| `POST` | `/predict` | Score one transaction |
-| `POST` | `/batch-predict` | Score multiple transactions |
-| `POST` | `/threshold-simulation` | Simulate decision-policy impact |
-| `GET` | `/recent-predictions` | Supply monitoring data |
+| `GET` | `/health` | Confirm successful API startup and policy loading |
+| `GET` | `/model-info` | Return frozen policy and feature-contract metadata |
+| `POST` | `/predict` | Score and explain one transaction |
+| `POST` | `/batch-predict` | Score and explain an ordered transaction batch |
 
-These endpoints are not all implemented yet.
+Prediction logging, `/recent-predictions`, and `/threshold-simulation` are not
+part of the Phase 5 application surface and remain later-phase concerns.
+
+See [`docs/phase5_api_integration.md`](docs/phase5_api_integration.md) for the
+complete API contract, implementation record, parity requirements, and final
+verification evidence.
 
 ---
 
 ## Project Structure
 
 ```text
-api/          FastAPI application scaffold, schemas, and decision logic
+api/          FastAPI application, strict schemas, frozen-policy loading, feature frames, and prediction services
 dashboard/    Streamlit dashboard scaffold
 data/         Local raw, processed, and sample-payload directories
 db/           Prediction-log database components
@@ -424,7 +464,7 @@ tests/        Automated pytest suite
 - [x] Phase 2 — LightGBM baseline, evaluation, and versioned model bundle
 - [x] Phase 3 — Probability calibration, drift analysis, and decision thresholds
 - [x] Phase 4 — SHAP explanations and reason codes
-- [ ] Phase 5 — RiskFlow PayGuard API prediction integration
+- [x] Phase 5 — RiskFlow PayGuard API prediction integration
 - [ ] Phase 6 — Monitoring and threshold-simulation dashboard
 - [ ] Phase 7 — Docker and cloud deployment
 - [ ] Phase 8 — Portfolio polish and product demonstration
@@ -443,7 +483,7 @@ Principal limitations include:
 - SHAP reason codes explain model signals but are not causal evidence
 - SHAP values decompose the raw margin rather than the calibrated probability
 - No dedicated high-value fraud objective
-- No production API integration
+- No deployed service, authentication, rate limiting, or production traffic validation
 - No live prediction logging or alerting
 - No automated retraining workflow
 - No formal policy approval or model-risk governance process
