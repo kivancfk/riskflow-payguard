@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import json
+
 from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
 from datetime import timezone
 
-from sqlalchemy import JSON
-from sqlalchemy import literal
+from sqlalchemy import Text
+from sqlalchemy import cast
 from sqlalchemy import select
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -204,12 +206,22 @@ def _transaction_id_predicate(
 ) -> ColumnElement[bool]:
     """Match the exact typed scalar stored in the JSON identifier column."""
 
-    return (
-        PredictionEvent.transaction_id
-        == literal(
+    serialized_transaction_id = (
+        json.dumps(
             transaction_id,
-            type_=JSON,
+            separators=(
+                ",",
+                ":",
+            ),
         )
+    )
+
+    return (
+        cast(
+            PredictionEvent.transaction_id,
+            Text,
+        )
+        == serialized_transaction_id
     )
 
 def record_prediction_labels(

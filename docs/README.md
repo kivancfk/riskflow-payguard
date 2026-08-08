@@ -1,6 +1,7 @@
 # Documentation
 
-Long-form project documentation, kept out of the root README so the front page stays scannable.
+Long-form project documentation, kept out of the root README so the front page
+stays scannable.
 
 ## Implemented Phase Documentation
 
@@ -13,7 +14,11 @@ Long-form project documentation, kept out of the root README so the front page s
 - [`phase4_results.md`](phase4_results.md) — Phase 4 verification and explanation results
 - [`phase5_api_integration.md`](phase5_api_integration.md) — strict FastAPI inference contract and parity verification
 - [`phase6_monitoring_dashboard.md`](phase6_monitoring_dashboard.md) — prediction persistence, outcome labels, monitoring, and read-only threshold simulation
+- [`phase7_deployment.md`](phase7_deployment.md) — hardened container image, PostgreSQL Compose deployment, persistence portability, and smoke validation
 
 ## Future Documentation
 
-Later phases should document deployment topology, production operations, alerting, governance, and portfolio/demo packaging when those capabilities are implemented.
+Later work should document public cloud release, monitoring alerts,
+authentication and production traffic controls, database migrations for schema
+evolution, governance, and portfolio/demo packaging when those capabilities
+are implemented.
