@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi import Request
 
 from api import model_loader
 from api.config import (
@@ -14,6 +15,13 @@ from api.config import (
 )
 from api.feature_frames import (
     _validate_api_feature_contract,
+)
+from api.logging_db import (
+    PredictionStore,
+    create_prediction_store,
+)
+from api.persistence import (
+    build_prediction_events,
 )
 from api.prediction_service import (
     predict_transaction,
@@ -30,8 +38,8 @@ from api.schemas import (
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
-    """Load and validate the frozen inference policy before serving requests."""
+async def lifespan(app: FastAPI):
+    """Load frozen inference policy and initialize prediction persistence."""
 
     bundle = model_loader.load_policy(
         settings.policy_path
@@ -41,7 +49,29 @@ async def lifespan(_: FastAPI):
         bundle
     )
 
-    yield
+    prediction_store = (
+        create_prediction_store()
+    )
+    prediction_store.init_schema()
+
+    app.state.prediction_store = (
+        prediction_store
+    )
+
+    try:
+        yield
+
+    finally:
+        prediction_store.dispose()
+
+        if hasattr(
+            app.state,
+            "prediction_store",
+        ):
+            delattr(
+                app.state,
+                "prediction_store",
+            )
 
 
 app = FastAPI(
@@ -50,9 +80,28 @@ app = FastAPI(
         "Frozen payment-fraud scoring, calibrated policy, "
         "and deterministic explanation service."
     ),
-    version="0.5.0",
+    version="0.6.0",
     lifespan=lifespan,
 )
+
+
+def _get_prediction_store(
+    request: Request,
+) -> PredictionStore:
+    """Return the prediction store initialized by application startup."""
+
+    prediction_store = getattr(
+        request.app.state,
+        "prediction_store",
+        None,
+    )
+
+    if prediction_store is None:
+        raise RuntimeError(
+            "Prediction store is not initialized"
+        )
+
+    return prediction_store
 
 
 @app.get(
@@ -137,13 +186,32 @@ def model_info() -> ModelInfoResponse:
 )
 def predict(
     transaction: TransactionRequest,
+    request: Request,
 ) -> PredictionResponse:
-    """Score and explain one transaction using the frozen policy."""
+    """Score, explain, and persist one frozen-policy prediction."""
 
-    return predict_transaction(
+    prediction = predict_transaction(
         transaction,
         model_loader.get_policy(),
     )
+
+    events = build_prediction_events(
+        [
+            transaction
+        ],
+        [
+            prediction
+        ],
+        model_loader.get_loaded_policy(),
+    )
+
+    _get_prediction_store(
+        request
+    ).add_events(
+        events
+    )
+
+    return prediction
 
 
 @app.post(
@@ -152,10 +220,25 @@ def predict(
 )
 def batch_predict(
     request: BatchPredictRequest,
+    http_request: Request,
 ) -> BatchPredictResponse:
-    """Score and explain an ordered transaction batch using one inference call."""
+    """Score, explain, and atomically persist an ordered transaction batch."""
 
-    return predict_transactions(
+    response = predict_transactions(
         request.transactions,
         model_loader.get_policy(),
     )
+
+    events = build_prediction_events(
+        request.transactions,
+        response.predictions,
+        model_loader.get_loaded_policy(),
+    )
+
+    _get_prediction_store(
+        http_request
+    ).add_events(
+        events
+    )
+
+    return response

@@ -38,9 +38,9 @@ class Settings(BaseSettings):
 
     policy_path: Path = FROZEN_POLICY_ARTIFACT
 
-    # Retained temporarily because the pre-Phase-5 API scaffold still imports
-    # database configuration. Database prediction logging is outside Phase 5
-    # and will not participate in the active inference path.
+    # Phase 6 persistence configuration controls only where prediction
+    # events are stored. It does not alter scoring, calibration, thresholds,
+    # explanations, or any other frozen inference behavior.
     database_url: str = "sqlite:///./predictions.db"
 
     @property
