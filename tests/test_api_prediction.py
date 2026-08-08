@@ -412,4 +412,3 @@ def test_predict_does_not_modify_frozen_artifact() -> None:
         == before_sha256
         == FROZEN_POLICY_SHA256
     )
-
