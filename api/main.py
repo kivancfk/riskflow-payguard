@@ -15,9 +15,14 @@ from api.config import (
 from api.feature_frames import (
     _validate_api_feature_contract,
 )
+from api.prediction_service import (
+    predict_transaction,
+)
 from api.schemas import (
     HealthResponse,
     ModelInfoResponse,
+    PredictionResponse,
+    TransactionRequest,
 )
 
 
@@ -120,4 +125,19 @@ def model_info() -> ModelInfoResponse:
             baseline_bundle
             .numerical_features
         ),
+    )
+
+
+@app.post(
+    "/predict",
+    response_model=PredictionResponse,
+)
+def predict(
+    transaction: TransactionRequest,
+) -> PredictionResponse:
+    """Score and explain one transaction using the frozen policy."""
+
+    return predict_transaction(
+        transaction,
+        model_loader.get_policy(),
     )
