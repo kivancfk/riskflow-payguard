@@ -2,9 +2,31 @@
 
 ## Explainable Payment Fraud-Risk Scoring Platform
 
-RiskFlow PayGuard is an end-to-end fraud-risk engineering project built around the IEEE-CIS Fraud Detection dataset.
+RiskFlow PayGuard is an end-to-end machine-learning decision system for payment fraud risk, built around the IEEE-CIS Fraud Detection dataset.
 
-It demonstrates how a machine-learning model can be turned into a controlled decision system rather than left as a notebook experiment:
+It turns a LightGBM model into a controlled product workflow with calibrated probabilities, a frozen `ALLOW` / `REVIEW` / `BLOCK` policy, TreeSHAP explanations, strict API inference, persistence, monitoring, and safe threshold simulation.
+
+![RiskFlow PayGuard Product Demo result](docs/assets/phase8_product_demo_result.png)
+
+*API-backed Product Demo showing a frozen `REVIEW` decision, calibrated fraud-risk probability, decision thresholds, TreeSHAP signals, and analyst reason codes.*
+
+---
+
+## Project at a Glance
+
+| Area | Implementation |
+|---|---|
+| **Modeling** | LightGBM fraud-risk classifier with chronological train / validation / test evaluation |
+| **Decisioning** | Sigmoid probability calibration with frozen `ALLOW` / `REVIEW` / `BLOCK` thresholds |
+| **Explainability** | TreeSHAP contributions with deterministic analyst-facing reason codes |
+| **Serving** | FastAPI with strict 63-feature validation, single scoring, and ordered batch scoring |
+| **Operations** | SQLAlchemy persistence, SQLite / PostgreSQL support, Streamlit monitoring, and read-only threshold simulation |
+| **Delivery** | Docker Compose deployment foundation, **454 passing automated tests**, and validated deployment smoke |
+| **Test performance** | PR-AUC `0.4946` at `3.48%` fraud prevalence; calibrated log loss `0.1014` |
+
+---
+
+## End-to-End Scoring Path
 
 ```text
 synthetic transaction
