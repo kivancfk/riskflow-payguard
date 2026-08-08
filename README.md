@@ -351,6 +351,32 @@ Unlabeled prediction events are not silently treated as legitimate transactions.
 
 ---
 
+## Product Screenshots
+
+### Product Demo — scored REVIEW decision
+
+The primary portfolio screenshot shows the API-backed Product Demo returning a
+frozen `REVIEW` decision, calibrated probability, TreeSHAP signals, and analyst
+reason codes.
+
+![RiskFlow PayGuard Product Demo result](docs/assets/phase8_product_demo_result.png)
+
+### Monitoring — persisted operational view
+
+The Monitoring view shows that API predictions are persisted and exposed through
+an operational dashboard.
+
+![RiskFlow PayGuard Monitoring dashboard](docs/assets/phase8_monitoring.png)
+
+### Threshold Simulator — read-only policy analysis
+
+The Threshold Simulator compares temporary candidate thresholds against the
+frozen policy without saving, applying, or promoting them.
+
+![RiskFlow PayGuard Threshold Simulator](docs/assets/phase8_threshold_simulator.png)
+
+---
+
 ## Architecture
 
 ```text

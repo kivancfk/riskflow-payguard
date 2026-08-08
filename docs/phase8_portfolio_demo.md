@@ -508,6 +508,42 @@ Before capturing portfolio screenshots:
 The primary portfolio image should communicate the product within a few seconds
 without requiring the viewer to inspect source code.
 
+## Captured Phase 8 Assets
+
+The following screenshots were captured from the running RiskFlow PayGuard
+application using deterministic synthetic demo transactions.
+
+### `assets/phase8_product_demo_input.png`
+
+Product Demo before a scoring request is submitted.
+
+![Product Demo input](assets/phase8_product_demo_input.png)
+
+### `assets/phase8_product_demo_result.png`
+
+Primary portfolio screenshot showing the higher-value synthetic transaction
+returning a frozen `REVIEW` decision, explanation signals, and analyst reason
+codes.
+
+![Product Demo result](assets/phase8_product_demo_result.png)
+
+### `assets/phase8_monitoring.png`
+
+Monitoring after three deterministic demo transactions were scored and
+persisted.
+
+![Monitoring](assets/phase8_monitoring.png)
+
+### `assets/phase8_threshold_simulator.png`
+
+Temporary threshold scenario showing workload and decision changes without
+mutating the frozen policy.
+
+![Threshold Simulator](assets/phase8_threshold_simulator.png)
+
+A separate reason-code screenshot was intentionally omitted because the primary
+Product Demo result already presents the analyst reason-code section clearly.
+
 ## Loom / Portfolio Video Plan
 
 A concise product video should target roughly two to four minutes rather than a
