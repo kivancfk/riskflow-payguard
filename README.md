@@ -10,6 +10,8 @@ It turns a LightGBM model into a controlled product workflow with calibrated pro
 
 *API-backed Product Demo showing a frozen `REVIEW` decision, calibrated fraud-risk probability, decision thresholds, TreeSHAP signals, and analyst reason codes.*
 
+**[Watch the Product Demo on Loom](https://www.loom.com/share/7bb21c5999f24abd9cf24939d6793f2c)**
+
 ---
 
 ## Project at a Glance
